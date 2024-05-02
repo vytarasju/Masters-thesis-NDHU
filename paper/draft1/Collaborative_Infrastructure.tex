@@ -1,0 +1,135 @@
+\documentclass[11pt,a4paper,footinclude=true,headinclude=true, oneside]{scrbook}
+\usepackage[T1]{fontenc} 
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{lipsum}
+\usepackage{tabu}
+\usepackage{booktabs}
+\usepackage[linedheaders,parts,pdfspacing]{classicthesis} % ,manychapters
+%\usepackage[osf]{libertine}
+\usepackage{amsthm}
+\bibliographystyle{IEEEtran}
+\usepackage{geometry}
+
+\begin{document}
+
+\begin{titlepage}
+    \begin{center}
+        \vspace*{1cm}
+        \begin{figure}[htbp]
+            \centerline{\includegraphics[scale=.5]{ndhu_logo.png}}
+        \end{figure}
+        {\fontsize{16}{16}\selectfont
+            \textbf{Increasing Survivability of UAV Wireless Power Transfer Applied to Wireless Sensor Network Problem in a Mountainous Environment}
+        }
+        
+        \vfill
+        \textbf{Student: Vytaras Juraska} \\
+        \textbf{Advising Professor: Wei-Che Chien}
+        \par\noindent\rule{\textwidth}{0.8pt}
+        Master's Thesis\\
+        Computer Science and Information Engineering student of\\
+        National Dong Hwa University\\
+            
+    \end{center}
+\end{titlepage}
+
+\newgeometry{left=2.5cm,right=4cm,top=2.5cm,bottom=2.5cm,includeheadfoot}
+
+\chapter{Abstract}
+
+Condensed 1 paragraph information about the paper and what it achieves.
+
+\tableofcontents
+
+\chapter{Introduction}
+
+Short introduction to the field of WPT in WSN with UAV: what is it, what each part (WPT, WSN ...) means, what is the main problem that is being solved and what are the most popular ways this problem is ALREADY solved.
+
+\section{State of UAV}
+
+It is important to understand where UAV consumer grade market is right now, how UAVs are performing and what are the main application methods.
+
+Main leading point is, that UAVs mostly are not made for mission planning convenience yet, that their main drawback is inconsistent battery consumption. Really focus on the advertised range and how strongly it can be impacted by environmental differences, such as wind (can drop even bellow 50 \% of maximum advertised survivable operation time).
+
+Mention, that extra weight requires much better performing UAVs, since in this application it is considered to mount WPT device on UAV. Talk about how the range will be impacted even more, if additional attachments were to be mounted on top of the UAV. Mention diminishing returns of making a bigger and stronger UAV to compensate for weight.
+
+Point out the current consumer grade maximum wind limitations for operation.
+
+\section{Issues with UAV application to WPT WSN}
+
+Mostly focus on more realistic scenarios: Wireless Sensor Network realistically would be more used in environments where it is less easier to have a wired connection between each sensor, that would mean less accessible environments, such as mountainous terrains.
+
+Talk about inconsistencies with winds in various environments, and the importance of environment and wind consideration in this specific field of subject.
+
+\section{Concept of Environment Aware UAV}
+
+Describe an ideal situation of how a environment aware UAV would behave and how it could improve not only in this application, but in most outside related mission planning applications.
+
+Do related work analysis of how the paper with wind analysis gets better performance in mission planning than just simple mission planning without that.
+
+\section{Other Related work to WPT WSN with UAV}
+
+Quick analysis of other papers, focusing on how they define power consumption and environment analysis (2D, 3D, wind resistance, drag force, wind projection analysis...)
+
+\chapter{System Design and Functionality}
+
+Introduction to what system I created and what it does in a simple form.
+
+\section{Environment Generation and Simulation}
+
+Show methods of how I generate terrain and other methods which take real world terrain and convert it to an iterable list of data points.
+
+Show how I generate sensors.
+
+\section{Grouping Sensors}
+
+Show methods of K-Means and X-Means and how they are used to get centroids, why they are important
+
+\section{UAV motion and path generation}
+
+Show how I get all possible paths that UAV can take, talk about how it manages to navigate in a 3D environment and avoid mountainous terrains.
+
+\section{Cost Calculation}
+
+Show how I calculate the cost for each path, show power consumption models, wind resistance and strong wind avoidance measurements.
+
+\subsection{Wind Simulation}
+
+Show Windninja and how I get simulated results for winds strength and direction in a 3D environment.
+
+\section{Shortest Path}
+
+Show how I get shortest path with ACO and 2-OPT ACO
+
+\section{Plotting}
+
+Show methods of how I visualise data in the end
+
+\chapter{Simulation and Comparison of different Models}
+
+Showing results compared to other methods.
+
+\section{Power Consumtion Improvement Results}
+Base model is the non-dynamic power consumption formula which has just drag force. Compare with improved version which uses wind simualted data to get results.
+
+\section{Shortest Path Improvement Results}
+Show possible shortest path improvements with 2OPT-ACO and ACO.
+
+\chapter{Summary and Conclusion}
+
+Talk about how my methods improve the current state of survivability when improving the power consumption calculation methods.
+
+Talk about possible future improvement for more dynamic pathing (for future work expansion with A*). DO I NEED THAT??
+
+Conclude that improvement is present in any case, since this is more realistic representation of outside environment when considering mission planning with UAVs, and also in this case the models is created with the idea of this specific WPT WSN field.
+
+\bibliography{references}
+\chapter{Affidavit}
+I, Vytaras Juraska, herewith declare that I have composed the present paper and work by myself and without use of any other than the cited sources and aids. Sentences or parts of sentences quoted literally are marked as such; other references with regard to the statement and scope are indicated by full details of the publications concerned. The paper and work in the same or similar form has not been submitted to any examination body and has not been published. This paper was not yet, even in part, used in another examination or as a course performance.
+
+\begin{figure}[H]
+\hspace*{3.5cm}
+\centerline{\includegraphics[scale=1]{Signature.png}}
+\end{figure}
+\end{document}
