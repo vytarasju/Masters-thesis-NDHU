@@ -22,6 +22,7 @@ sensors_num = 200
 
 # local_terrain - real terrain data, 
 terrain = local_terrain = readTerrainXYZWindninja('local_small.xyz')
+terrain = convertXYZtoMeters(terrain)
 
 # Read wind data from ASC and make a list with terrain data together
 wind = readWindASCWindninja(terrain, "local_small_20_3_109m_vel.asc", "local_small_20_3_109m_ang.asc")

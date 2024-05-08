@@ -109,4 +109,3 @@ class DefineMeasurements:
         else:
             print("ERROR: Neither aco_distance, nor motion_distance were provided initially")
             return 0
-        

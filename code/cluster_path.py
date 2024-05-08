@@ -1,7 +1,5 @@
 import numpy as np
 from sklearn.cluster import KMeans
-import networkx as nx
-import matplotlib.pyplot as plt
 import math
 import statistics
 
@@ -36,33 +34,6 @@ def getDistanceCentroids(centroids):
             distance_matrix[j][i] = distance
     return distance_matrix
 
-def convertCentroidsToGraph(centroids, plot):
-    def numberToAlphabeticName(n):
-        n += 1
-        result = ""
-        while n > 0:
-            n, remainder = divmod(n - 1, 26)
-            result = chr(remainder + ord('A')) + result
-        return result
-
-    centroids_max = len(centroids)
-    distance = getDistanceCentroids(centroids)
-    node_names = [numberToAlphabeticName(node) for node in range(centroids_max)]
-
-    graph = nx.DiGraph()
-
-    for node_one in range(centroids_max):
-        for node_two in range(centroids_max):
-            if node_one == node_two: continue
-            graph.add_edge(node_names[node_one], 
-                           node_names[node_two], 
-                           cost=distance[node_one][node_two])
-
-    if plot == True:     
-        nx.draw(graph, with_labels=True)
-        plt.show()
-    return graph
-
 def getMotionAndDistance(centroids, terrain, num_points=20, elevation=0.1):
     iteration = 0
     motion_matrix = []
@@ -96,3 +67,18 @@ def getMotionAndDistance(centroids, terrain, num_points=20, elevation=0.1):
             iteration += 1
     return motion_matrix, np.array(distance_matrix)
 
+        
+def convertXYZtoMeters(terrain):
+    terrain_converted = []
+    terrain = terrain.tolist()
+    x_min, y_min = float('inf'), float('inf')
+
+    for point in terrain:
+        if point[0] < x_min: x_min = point[0]
+        if point[1] < y_min: y_min = point[1]
+
+    for point in terrain:
+        point_converted = [point[0] - x_min, point[1] - y_min, point[2]]
+        terrain_converted.append(point_converted)
+    
+    return np.array(terrain_converted)
