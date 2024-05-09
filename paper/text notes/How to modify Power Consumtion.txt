@@ -1,0 +1,18 @@
+I already have power calcualtions for propulsion with drag force. However this is a static equation. In that equation
+wind speed and direction is not considered, only speed of the object is. That equation calculates how much force
+does the drone need to push through air particles, however - especially in a mountainous environment - air never stays still.
+
+I need to introduce dynamic equation on top of this calculation to get realistic power consumtion/speeds.
+
+The current problem: the faster object goes - the more it is impacted by wind. More wind impact, more power needed
+to push against it in order to achieve the same speed as if there would be no wind at all.
+
+Real life situation:
+if a drone is going 70 km/h in no wind environment and it is using 300mAh of battery,
+then in a windy environment if the drone is going to use 300mAh for the same path, it will go slower and end up not reaching 
+the same distance as it did in no wind environment.
+
+With quadcopter UAVs, the faster a drone goes, the less power it needs to use (because of how air intake works on a tilted angle).
+So theoretically, UAV uses more power when going against winds, because winds slow it down and slower speed equals to more power consumtion,
+and also, if the same destination from A to B is needed to be achieved, it will take longer to do so (hence if a path takes 30 seconds and
+uses 300mAh, now it will take, for example 35 seconds, hence another reason for higher usage).

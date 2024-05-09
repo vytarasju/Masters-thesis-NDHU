@@ -1,0 +1,1 @@
+add to algoritm calculation, which can dedicate a specific time for UAV to come back to base, recharge, and go again to continue charging the SNs. ref: Trajectory Optimization of Laser-Charged UAVs for Charging

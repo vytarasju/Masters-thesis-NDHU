@@ -1,0 +1,41 @@
+The static power consumtion formula that I apply (propulsion power consumtion) gives me watts. 
+
+A watt is Joules/second. This means that watt is essentially a rate (or a speed) at which energy is consumed.
+
+To understand how much energy it needs is simple, take Power (watts) and multiply by seconds of operation and you get Joules needed to operate.
+
+_________________________________________________________
+
+How to understand how much battery that power would use?
+
+There are multiple ways, but how I will do it.
+
+Firstly, lets convert watts to watthours. Watthour is how much time 1 watt could continously run for. For example 1Wh = 1 watt running for 1 hour, 5Wh = 1W * 5hours = 1 watt running for 5 hours.
+
+So let's say my power consumtion is 1095 watts when running at 10 meters/second speed (real example). My route takes 27 seconds to complete. Let's convert 27 seconds to hours, which is 0.0075 hours. 
+So my Wh would be 1095W * 0.0075 hours = 8.21 Wh.
+
+How to convert it to battery consumtion?
+Battery capacity is measured in miliamp hours usually (mAh). For example AGRAS T10 has 9500 mAh battery.
+
+convert watts and time of operation to mAh. That would be how much capacity is needed to complete that operation. To do so there is a formula: Energy used from battery (watt-hours) = voltage provided by battery (volts) * battery capacity (amp-hours): E = V * Q
+
+Let's take T10 AGRAS again, battery voltage is 52.22V.
+
+Converting this formula to calculate capacity we get: Q = E / V
+So battery capacity needed for 1095W 27s operation (which is 8.21Wh) and battery with 52.22V is equal to 0.1572 Ah
+
+Since most battery capacity is written as mili amp hour we convert and get 157.2 mAh which is about 1.6% of battery capacity
+
+_______________________________________________________
+
+How to calculate total duration of battery with the constant consumtion?
+
+we need to get amps from power (watts) and voltage (V). Since P = V * I, then we can get I = P / V.
+In our case I = 1095W / 52.22V = 20.9689A = 21A = 21000mA
+
+then, if we have battery with 9500 mAh and we have used 21000 mA, we can get battery life = capacity / load current = 9500mAh / 21000mA = 0.45hour
+
+60min * 0.45 = 27 minutes
+
+If we take proportions (getting consumtion per 1 minute and getting what consumtion is for 100% of battery) we will get the same results.
