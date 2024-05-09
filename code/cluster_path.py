@@ -34,7 +34,7 @@ def getDistanceCentroids(centroids):
             distance_matrix[j][i] = distance
     return distance_matrix
 
-def getMotionAndDistance(centroids, terrain, num_points=20, elevation=0.1):
+def getMotionDistance(centroids, terrain, num_points=20, elevation=0.1):
     iteration = 0
     motion_matrix = []
     distance_matrix = []

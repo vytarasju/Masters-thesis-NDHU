@@ -2,22 +2,31 @@ import numpy as np
 import math
 
 class DefineMeasurements:
-    def __init__(self, height_width, terrain, distance = 0, motion_distance = []):
+    def __init__(self, height_width, terrain, total_distance = 0, motion_distance = []):
         # Distance measured in meters
         self.terrain = []
         self.terrain_scale = height_width
-        # defined it for itteration, did not use it
-        # self.terrain_ratio_100 = height_width / 100 # Meters per 0.01 scale for both x and y
         self.air_density = 1.225 #kg/m^3
 
         # Non-Measured distance variables
         self.terrain_nm = terrain
-        self.distance_nm = distance
+        self.total_distance_nm = total_distance
         self.motion_distance_nm = motion_distance.tolist()
 
         self.initUAV()
+
+    # If the init was called before motion and total distance results
+    def initDistance(self, total_distance = 0, motion_distance = []):
+        self.total_distance_nm = total_distance
+        self.motion_distance_nm = motion_distance.tolist()
     
+    # Main UAV parameters
     def initUAV(self):
+        # Added from other sources (DJI T10)
+        self.battery_capacity = 9500 #mAh
+        self.battery_voltage = 52.22 #V
+        self.max_wind_tolerance = 6 #m/s
+
         # Simulated Values From Reference
         self.UAV_weight = 100 #Newton
         self.rotor_radius = 0.5 #meters
@@ -58,50 +67,67 @@ class DefineMeasurements:
 
         return propulsion_power_consumtion
 
+    # Function converting total distance and motion distance to:
+    # meters (XYZ terrain is already defined in meters), or seconds, or milliamphours
     def getMeasurements(self, type, speed = 0):
         is_aco, is_motion = False, False
         distance_measured = 0
         motion_measured = []
 
-        # Preparing for different types conversions
-        if (type == 'seconds' or type == 'watts') and speed == 0: 
-            print('ERROR: Specified type requires UAV speed')
-            return
+        if self.total_distance_nm != 0: is_aco = True
+        if len(self.motion_distance_nm) != 0: is_motion = True
 
-        power_consumtion_moving = 0
-        if type == 'watts': power_consumtion_moving = self.getPropulsionPowerConsumtion(speed)
+        match type:
+            case 'meters':
+                if is_aco: distance_measured = self.total_distance_nm * self.terrain_scale
 
-        # Converting distance
-        if self.distance_nm != 0:
-            is_aco = True
-            distance_meters = self.distance_nm * self.terrain_scale
-            
-            if speed != 0: distance_seconds = distance_meters / speed
+                if is_motion: 
+                    for iteration, row in enumerate(self.motion_distance_nm):
+                        motion_measured.append([])
+                        for col in row:
+                            distance_meters = col * self.terrain_scale
+                            motion_measured[iteration].append(distance_meters)
 
-            if type == 'meters': distance_measured = distance_meters
-            if type == 'seconds': distance_measured = distance_seconds
-            if type == 'watts':
-                distance_wats = power_consumtion_moving * distance_seconds
-                distance_measured = distance_wats
+            case 'seconds':
+                if speed == 0:
+                    print('ERROR: Specified type requires UAV speed')
+                    return
+                
+                if is_aco: 
+                    distance_meters = self.total_distance_nm * self.terrain_scale
+                    distance_measured = distance_meters / speed
 
+                if is_motion: 
+                    for iteration, row in enumerate(self.motion_distance_nm):
+                        motion_measured.append([])
+                        for col in row:
+                            distance_meters = col * self.terrain_scale
+                            distance_seconds = distance_meters / speed
+                            motion_measured[iteration].append(distance_seconds)
 
-        # Converting motion
-        if len(self.motion_distance_nm) != 0:
-            is_motion = True
-            # Calculate motion iteratively
-            for iteration, row in enumerate(self.motion_distance_nm):
-                motion_measured.append([])
-                for col in row:
-                    distance_meters = col * self.terrain_scale
+            case 'milliamphours':
+                if speed == 0:
+                    print('ERROR: Specified type requires UAV speed')
+                    return
+                
+                power_consumtion_moving = self.getPropulsionPowerConsumtion(speed)
+                if is_aco: 
+                    distance_meters = self.total_distance_nm * self.terrain_scale
+                    distance_seconds = distance_meters / speed
+                    distance_watthour = power_consumtion_moving  * (distance_seconds / 3600)
+                    distance_measured = distance_watthour / self.battery_voltage * 1000
 
-                    if speed != 0: distance_seconds = distance_meters / speed
-
-                    if type == 'meters': motion_measured[iteration].append(distance_meters)
-                    if type == 'seconds': motion_measured[iteration].append(distance_seconds)
-                    if type == 'watts':
-                        distance_wats = power_consumtion_moving * distance_seconds
-                        motion_measured[iteration].append(distance_wats)
-
+                if is_motion: 
+                    for iteration, row in enumerate(self.motion_distance_nm):
+                        motion_measured.append([])
+                        for col in row:
+                            distance_meters = col * self.terrain_scale
+                            distance_seconds = distance_meters / speed
+                            distance_watthour = power_consumtion_moving * (distance_seconds / 3600)
+                            distance_milliamphour = distance_watthour / self.battery_voltage * 1000
+                            motion_measured[iteration].append(distance_milliamphour)
+            case _:
+                print('ERROR: Speficied type not defined')
         
         if is_aco and is_motion: return distance_measured, motion_measured
         elif not is_aco and is_motion: return motion_measured
