@@ -25,15 +25,15 @@ aco_path, aco_distance = ant_colony.find_shortest_path()
 measurements = DefineMeasurements(terrain=terrain, height_width=height_width_ratio, 
                                   total_cost=aco_distance, motion_cost=motion_distance)
 
-power_consumtion_moving = measurements.getPropulsionPowerConsumtion(UAV_speed)
-power_consumtion_hover = measurements.getPropulsionPowerConsumtion(0)
-
 distance_measured, motion_measured = measurements.convertDistancetoMeasurements(type='milliamphours', speed=UAV_speed)
 
-print(f'power: {measurements.getPropulsionPowerConsumtion(UAV_speed)}')
-print(distance_measured)
+print(f'This is taking just distance as cost measurement for ACO, \n\
+      where speed is consistent, no wind impact calculation. \n\
+      real power consumtion would be even higher')
 
-print(aco_path)
+print(f'Total milliamphour consumtion: {distance_measured}')
+
+print(f'Path sequence: {aco_path}')
 
 plot(centroids=centroids, terrain=terrain, motion=motion, path=aco_path)
 

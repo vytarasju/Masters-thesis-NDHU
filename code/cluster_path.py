@@ -41,6 +41,32 @@ def getDistanceCentroids(centroids):
             distance_matrix[j][i] = distance
     return distance_matrix
 
+# Helper funciton for getMotion to calculate power needed for UAV flying in wind
+def getPowerInWind(speed, UAV_parameters, wind_speed, wind_angle, x_difference, y_difference):
+    UAV_speed_in_wind = 0
+
+    # Calculate the angle with the reverse of y-axis 
+    # (since windninja clasifies 0 as negative y-axis)
+    angle_radians = math.atan2(x_difference, y_difference)
+    angle_degrees = math.degrees(angle_radians)
+    # Make sure angle is between 0 and 360
+    angle_degrees = (angle_degrees + 360) % 360
+    # Get angle reverse of y-axis
+    UAV_angle = (angle_degrees + 180) % 360
+
+    # Get angle of wind from UAV perspective
+    Wind_to_UAV_angle = 360 - (((UAV_angle + 180) % 360) - wind_angle)
+    
+    # Get actual UAV speed with effect of wind
+    # between 90 and 270 from UAV perspective - tailwind = increases speed
+    # between 0, 90 and 270, 360 wind is against UAV - slowing it down
+    if 90 <= Wind_to_UAV_angle <= 270:
+        UAV_speed_in_wind = speed + (wind_speed * abs(math.cos(Wind_to_UAV_angle)))
+    else:
+        UAV_speed_in_wind = speed - (wind_speed * abs(math.cos(Wind_to_UAV_angle)))
+
+    return UAV_parameters.getPropulsionPowerConsumtion(UAV_speed_in_wind), UAV_speed_in_wind
+
 # Takes distance between each point and converts it to motion of a drone
 # Was made originally, because dirrect path between points was going through terrain
 def getMotion(centroids, terrain, num_points=20, elevation=0.1, 
@@ -51,7 +77,7 @@ def getMotion(centroids, terrain, num_points=20, elevation=0.1,
 
     # Error handling for wrong parameter inputs
     if cost == 'consumption' and (speed == 0 or UAV_parameters == 0):
-        print('ERROR: consumption requires speed and UAV_parameters for getMotion parameters')
+        print('ERROR: consumption requires speed, UAV_parameters and wind for getMotion parameters')
         return
     
     if cost != 'consumption' and cost != 'distance':
@@ -65,7 +91,9 @@ def getMotion(centroids, terrain, num_points=20, elevation=0.1,
                 cost_matrix[index1].append(0.0)
                 continue
             motion_matrix.append([[], index1, index2])
-            distance = 0
+            distance, total_distance = 0, 0
+            milliamphour, total_milliamphour = 0, 0
+
             for i in range(num_points):
                 t = i / (num_points - 1)  # Parameter t ranges from 0 to 1
                 x = (1 - t) * point1[0] + t * point2[0]
@@ -81,34 +109,34 @@ def getMotion(centroids, terrain, num_points=20, elevation=0.1,
                 x_difference = motion_matrix[iteration][0][i][0] - motion_matrix[iteration][0][i - 1][0]
                 y_difference = motion_matrix[iteration][0][i][1] - motion_matrix[iteration][0][i - 1][1]
                 z_difference = motion_matrix[iteration][0][i][2] - motion_matrix[iteration][0][i - 1][2]
-                distance += math.sqrt(x_difference**2 + y_difference**2 + z_difference**2)
+                distance = math.sqrt(x_difference**2 + y_difference**2 + z_difference**2)
                 
+                if cost == 'distance': total_distance += distance
+
+                """
+                Gets speed of wind against UAV when it is on angle
+                Then provides that speed to propulsion power equation
+                For each ith segment of the path, with speeds in winds:
+                    1) Calculates the time required for that distance
+                    2) Gets watthour consumed for that time
+                    3) gets milliamphours for defined battery voltage from watthours
+                
+                Sums each ith segment of milliamphours to how much it would consume for the whole path.
+                """
                 if cost == 'consumption':
-                    
                     wind_speed = wind[terrain_atpoint_index][3]
                     wind_angle = wind[terrain_atpoint_index][3]
 
-                    # Calculate the angle with the reverse of y-axis 
-                    # (since windninja clasifies 0 as negative y-axis)
-                    # So if the angle matches with the wind, then wind is behind drone - tailwind
-                    angle_radians = math.atan2(x_difference, y_difference)
-                    angle_degrees = math.degrees(angle_radians)
-                    # Make sure angle is between 0 and 360
-                    angle_degrees = (angle_degrees + 360) % 360
-                    # Get angle reverse of y-axis
-                    UAV_angle = (angle_degrees + 180) % 360
+                    wind_power_consumption, UAV_speed = getPowerInWind(speed, UAV_parameters, wind_speed,
+                                                                        wind_angle, x_difference, y_difference)
+                    
+                    seconds = distance / UAV_speed
+                    watthour = wind_power_consumption  * (seconds / 3600)
+                    milliamphour = watthour / UAV_parameters.battery_voltage * 1000
+                    total_milliamphour += milliamphour
 
-                    """
-                       get speed of wind against UAV when it is on angle
-                       then provide that speed to propulsion power equation
-                       and then calculate the time required for that distance (each ith segment)
-                       and then output mAh battery consumption (each ith segment)
-                       this will give a matrix with battery consumption with respect to directional wind
-                    """
-
-
-            if cost == 'distance': cost_matrix[index1].append(distance)
-            if cost == 'consumption': cost_matrix[index1].append(UAV_angle)
+            if cost == 'distance': cost_matrix[index1].append(total_distance)
+            if cost == 'consumption': cost_matrix[index1].append(total_milliamphour)
             iteration += 1
     return motion_matrix, np.array(cost_matrix)
 

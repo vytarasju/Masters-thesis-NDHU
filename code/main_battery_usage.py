@@ -19,19 +19,27 @@ motion, motion_consumtion = getMotion(centroids, terrain, num_points = UAV_speed
                                       elevation=UAV_elevation, cost = 'consumption',
                                       speed = UAV_speed, UAV_parameters = measurements, wind=wind)
 
-print(motion_consumtion.tolist())
+ant_colony = AntColony(motion_consumtion, num_ants=80, num_iterations=50, 
+                       evaporation_rate=0.5, alpha=1, beta=1)
+
+aco_path, aco_cost = ant_colony.find_shortest_path()
+
+print(f'This is taking power consumtion as cost measurement for ACO, \n\
+      where speed is changing according to wind impact. \n\
+      ACO uses angles where wind accelerates UAV and avoids high \n\
+      power consumtion paths, hence better results. \n\
+      Much more realistic representation of power consumtion')
+
+print(f'Total milliamphour consumtion: {aco_cost}')
+
+print(f'Path sequence: {aco_path}')
+
+plot(centroids=centroids, terrain=terrain, motion=motion, path=aco_path)
 
 """
    Finish up with Cluster_Path and finally add Hovering Power consumtion to
    total power consumtion equation. I already have power consumtion for hovering
    need to figgure out time required for hovering and power from WPT, which better
    to take as a static formula (with fixed Energy (Joules) required for each sensor)
-"""
-
-"""
-   I have been collecting thoughts and explanations in text files separately
-   for each segment of the thesis, they will help with paper writting a lot
-   since most complex theoretical analysis parts are already defined and
-   roughly typed out.
 """
 
