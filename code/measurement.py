@@ -33,14 +33,14 @@ class DefineMeasurements:
         self.blade_angular_velocity = 400 #radians/second
         self.blade_number = 4 #quadcopter
         self.blade_chord_length = 0.0196 #meters?
-        self.fuselarge_flat_plane_area = 0.0118 #meters^2
+        self.fuselage_flat_plane_area = 0.0118 #meters^2
         self.profile_drag_coefficient = 0.012
         self.induced_power_correction_factor = 0.1
 
         self.rotor_disc_area = math.pi * self.rotor_radius**2
         self.blade_tip_speed = self.blade_angular_velocity * self.rotor_disc_area
         self.rotor_solidity = (self.blade_number * self.blade_chord_length) / (math.pi * self.rotor_radius)
-        self.fuselarge_drag_ratio = self.fuselarge_flat_plane_area / (self.rotor_solidity * self.rotor_disc_area)
+        self.fuselage_drag_ratio = self.fuselage_flat_plane_area / (self.rotor_solidity * self.rotor_disc_area)
         self.rotor_mean_induced_velocity = math.sqrt(self.UAV_weight / (2 * self.air_density * self.rotor_disc_area))
 
     """ Takes speed meters/second and returns power required
@@ -60,7 +60,7 @@ class DefineMeasurements:
         blade_profile = blade_profile_power * (1 + ((3 * speed**2) / (self.blade_tip_speed**2)))
         induced = induced_power * (math.sqrt(1 + (speed**4 / (4 * self.rotor_mean_induced_velocity**4))) - \
                                    (speed**2 / (2 * self.rotor_mean_induced_velocity**2)))**(1/2)
-        parasitic = 0.5 * self.fuselarge_drag_ratio * self.air_density * self.rotor_solidity * \
+        parasitic = 0.5 * self.fuselage_drag_ratio * self.air_density * self.rotor_solidity * \
                     self.rotor_disc_area * speed
         
         propulsion_power_consumtion = blade_profile + induced + parasitic

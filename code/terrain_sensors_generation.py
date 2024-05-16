@@ -3,18 +3,12 @@ from noise import pnoise2
 import random
 
 """Example of Parameter Selection
-
-# Define terrain parameters
 length = width = 100
 scale = 100
 octaves = 6
 persistence = 0.5
 lacunarity = 1.8
 seed = 15
-
-# Number of sensors
-sensors_num = 50
-
 """
 
 # Generate height values with perlin noise

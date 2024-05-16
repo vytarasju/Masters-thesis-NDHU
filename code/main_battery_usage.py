@@ -9,32 +9,31 @@ sensors = readCSV('sensor_coordinates.csv')
 centroids = readCSV('centroid_coordinates.csv')
 wind = readCSV('wind_data.csv')
 
+"""BEGIN Parameter Defintion"""
 UAV_speed = 30 #meters/second
-UAV_elevation = .2 #meters
+UAV_elevation = 109 #meters
 UAV_steps = 40 #steps between points
+"""END Parameter Defintion"""
 
 measurements = DefineMeasurements(terrain=terrain)
 
-motion, motion_consumtion = getMotion(centroids, terrain, num_points = UAV_speed,
+motion, motion_consumption = getMotion(centroids, terrain, num_points = UAV_speed,
                                       elevation=UAV_elevation, cost = 'consumption',
                                       speed = UAV_speed, UAV_parameters = measurements, wind=wind)
 
-ant_colony = AntColony(motion_consumtion, num_ants=80, num_iterations=50, 
+ant_colony = AntColony(motion_consumption, num_ants=80, num_iterations=50, 
                        evaporation_rate=0.5, alpha=1, beta=1)
 
 aco_path, aco_cost = ant_colony.find_shortest_path()
 
-print(f'This is taking power consumtion as cost measurement for ACO, \n\
-      where speed is changing according to wind impact. \n\
-      ACO uses angles where wind accelerates UAV and avoids high \n\
-      power consumtion paths, hence better results. \n\
-      Much more realistic representation of power consumtion')
+
+print(f'This is taking power consumtion as cost measurement for ACO')
 
 print(f'Total milliamphour consumtion: {aco_cost}')
 
 print(f'Path sequence: {aco_path}')
 
-plot(centroids=centroids, terrain=terrain, motion=motion, path=aco_path)
+# plot(centroids=centroids, terrain=terrain, motion=motion, path=aco_path)
 
 """
    Finish up with Cluster_Path and finally add Hovering Power consumtion to

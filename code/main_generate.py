@@ -13,8 +13,13 @@ lacunarity = 1.8
 seed = 15
 
 # Number of sensors
-cluster_num = 5
 sensors_num = 200
+cluster_num = 5 # Used in KMeans
+
+# WPT range definition for XMeans characteristics
+# Created for XYZ terrain, where it is already metered
+WPT_height = 0 #meters
+WPT_range_diameter = 0 #meters
 """END Parameter Defintion"""
 
 # generateTerrain - randomized terrain data

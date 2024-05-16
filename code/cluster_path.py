@@ -60,11 +60,7 @@ def getPowerInWind(speed, UAV_parameters, wind_speed, wind_angle, x_difference, 
     # Get actual UAV speed with effect of wind
     # between 90 and 270 from UAV perspective - tailwind = increases speed
     # between 0, 90 and 270, 360 wind is against UAV - slowing it down
-    if 90 <= Wind_to_UAV_angle <= 270:
-        UAV_speed_in_wind = speed + (wind_speed * abs(math.cos(Wind_to_UAV_angle)))
-    else:
-        UAV_speed_in_wind = speed - (wind_speed * abs(math.cos(Wind_to_UAV_angle)))
-
+    UAV_speed_in_wind = speed - (wind_speed * math.cos(math.radians(Wind_to_UAV_angle)))
     return UAV_parameters.getPropulsionPowerConsumtion(UAV_speed_in_wind), UAV_speed_in_wind
 
 # Takes distance between each point and converts it to motion of a drone

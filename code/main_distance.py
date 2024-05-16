@@ -9,12 +9,14 @@ sensors = readCSV('sensor_coordinates.csv')
 centroids = readCSV('centroid_coordinates.csv')
 wind = readCSV('wind_data.csv')
 
+"""BEGIN Parameter Defintion"""
 UAV_speed = 30 #meters/second
-UAV_elevation = .2 #meters
+UAV_elevation = 109 #meters
 UAV_steps = 40 #steps between points
 
 # Set ratio to 1 for XYZ data, set to a 100 for generated data
 height_width_ratio = 1
+"""END Parameter Defintion"""
 
 motion, motion_distance = getMotion(centroids, terrain, num_points=UAV_steps, elevation=UAV_elevation)
 
@@ -27,9 +29,7 @@ measurements = DefineMeasurements(terrain=terrain, height_width=height_width_rat
 
 distance_measured, motion_measured = measurements.convertDistancetoMeasurements(type='milliamphours', speed=UAV_speed)
 
-print(f'This is taking just distance as cost measurement for ACO, \n\
-      where speed is consistent, no wind impact calculation. \n\
-      real power consumtion would be even higher')
+print(f'This is taking just distance as cost measurement for AC')
 
 print(f'Total milliamphour consumtion: {distance_measured}')
 
