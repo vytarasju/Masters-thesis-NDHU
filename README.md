@@ -2,7 +2,7 @@
 
 Main reporository for my Master's thesis, including code and drafts for paper.
 
-Overleaf: https://www.overleaf.com/project/66337d7e8f7aab11258e8bd2
+Overleaf: https://www.overleaf.com/read/kfgtqrrjvggd#6d6fa1
 
 Topic: Increasing Survivability of UAV Wireless Power Transfer Applied to Wireless Sensor Network Problem in a Mountainous Environment
 
