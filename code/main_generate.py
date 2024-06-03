@@ -13,27 +13,31 @@ lacunarity = 1.8
 seed = 15
 
 # Number of sensors
-sensors_num = 200
+sensors_num = 50
 cluster_num = 5 # Used in KMeans
 
 # WPT range definition for XMeans characteristics
 # Created for XYZ terrain, where it is already metered
-WPT_height = 0 #meters
-WPT_range_diameter = 0 #meters
+min_hover_WPT = 10 #meters
+max_distance_WPT = 500 #meters
 """END Parameter Defintion"""
 
 # generateTerrain - randomized terrain data
 # terrain = generateTerrain(width, length, scale, octaves, persistence, lacunarity, seed)
 
 # local_terrain - real terrain data, 
-terrain = local_terrain = readTerrainXYZWindninja('local_small.xyz')
+terrain = local_terrain = readTerrainXYZWindninja('local_muchsmall.xyz')
 terrain = convertXYZtoMeters(terrain)
 
 # Read wind data from ASC and make a list with terrain data together
-wind = readWindASCWindninja(terrain, "local_small_20_3_109m_vel.asc", "local_small_20_3_109m_ang.asc")
+wind = readWindASCWindninja(terrain, "local_muchsmall_0_3_11m_vel.asc", "local_muchsmall_0_3_11m_ang.asc")
 
 sensors = generateSensors(terrain, sensors_num)
-centroids = clusterKMeans( terrain, sensors, cluster_num)
+# centroids = clusterKMeans(terrain, sensors, cluster_num)
+centroids = clusterXMeans(terrain, sensors, min_hover_WPT, max_distance_WPT)
+# plot(terrain=terrain, sensors=sensors, centroids=centroids)
+print(len(centroids))
+plot(terrain=terrain, centroids=centroids)
 
 writeTerrain(terrain)
 writeSensors(sensors)

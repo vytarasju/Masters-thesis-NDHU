@@ -2,8 +2,8 @@ import numpy as np
 import csv
 import os
 
-path_csv = "/home/vytska/thesis/code/csv"
-path_windninja = "/home/vytska/thesis/code/windninja/"
+path_csv = "/home/vytska/Masters-thesis-NDHU/code/csv"
+path_windninja = "/home/vytska/Masters-thesis-NDHU/code/windninja/"
 os.chdir(path_csv)
 
 #reading terrain data

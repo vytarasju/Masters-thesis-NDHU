@@ -11,8 +11,8 @@ wind = readCSV('wind_data.csv')
 
 """BEGIN Parameter Defintion"""
 UAV_speed = 30 #meters/second
-UAV_elevation = 109 #meters
-UAV_steps = 40 #steps between points
+UAV_elevation = 39 #meters
+UAV_steps = 15 #steps between points
 
 # Set ratio to 1 for XYZ data, set to a 100 for generated data
 height_width_ratio = 1
@@ -35,5 +35,8 @@ print(f'Total milliamphour consumtion: {distance_measured}')
 
 print(f'Path sequence: {aco_path}')
 
-plot(centroids=centroids, terrain=terrain, motion=motion, path=aco_path)
+plot(centroids=centroids, terrain=terrain, motion=motion)
+
+
+
 

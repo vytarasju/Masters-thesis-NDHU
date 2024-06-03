@@ -11,8 +11,8 @@ wind = readCSV('wind_data.csv')
 
 """BEGIN Parameter Defintion"""
 UAV_speed = 30 #meters/second
-UAV_elevation = 109 #meters
-UAV_steps = 40 #steps between points
+UAV_elevation = 39 #meters
+UAV_steps = 3 #steps between points
 """END Parameter Defintion"""
 
 measurements = DefineMeasurements(terrain=terrain)
@@ -33,7 +33,7 @@ print(f'Total milliamphour consumtion: {aco_cost}')
 
 print(f'Path sequence: {aco_path}')
 
-# plot(centroids=centroids, terrain=terrain, motion=motion, path=aco_path)
+plot(centroids=centroids, terrain=terrain, motion=motion, path=aco_path)
 
 """
    Finish up with Cluster_Path and finally add Hovering Power consumtion to

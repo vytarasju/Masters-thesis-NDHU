@@ -3,30 +3,49 @@ from sklearn.cluster import KMeans
 import math
 import statistics
 
+
+def getCenterPoint(terrain):
+    x, y = statistics.median(terrain[:, 0]), statistics.median(terrain[:, 1])
+    # Takes euclidean distance between x and y values and returns index of smallest distance
+    point_index = np.argmin((terrain[:, 0] - x)**2 + (terrain[:, 1] - y)**2)
+    return terrain[point_index]
+
 """
    Define XMeans for XYZ specifically (since it already gives precise terrain distances)
    and create clusters, so that each cluster would fit in a specific radius
    to ensure, that at each SN centroid WPT would reach all of the sensors
 """
-def clusterXMeans():
-    return
+def clusterXMeans(terrain, sensors, min_hover, max_distance):
+    center_point = getCenterPoint(terrain)
+    sensor_num = len(sensors)
+
+    cluster_num = 1
+    sensors_in_range = False
+    while sensors_in_range == False:
+        kmeans = KMeans(n_clusters=cluster_num, n_init=10)
+        kmeans.fit(sensors)
+        sensors_in_range = True
+        for i in range(sensor_num):
+            centroid = kmeans.cluster_centers_[kmeans.labels_[i]]
+            hover_point = [centroid[0], centroid[1], (centroid[2] + min_hover)]
+            sensor = sensors[i]
+            distance = round(np.sqrt(np.sum(np.power((hover_point - sensor), 2))), 2)
+            if distance > max_distance: 
+                sensors_in_range = False
+                cluster_num += 1
+                break
+    
+    centroids = np.vstack((center_point, kmeans.cluster_centers_))
+    return centroids
 
 def clusterKMeans(terrain, sensors, n_clusters):
-    def getCenterPoint(terrain):
-        x, y = statistics.median(terrain[:, 0]), statistics.median(terrain[:, 1])
-        # Takes euclidean distance between x and y values and returns index of smallest distance
-        point_index = np.argmin((terrain[:, 0] - x)**2 + (terrain[:, 1] - y)**2)
-        return terrain[point_index]
-    
     center_point = getCenterPoint(terrain)
 
     #n_init set to surpress warning messages
     kmeans = KMeans(n_clusters=n_clusters, n_init=10)
     kmeans.fit(sensors)
 
-    centroids = kmeans.cluster_centers_
-    centroids = np.vstack((center_point, centroids))
-    # labels = kmeans.labels_
+    centroids = np.vstack((center_point, kmeans.cluster_centers_))
     return centroids
 
 #using euclidean distance between 2 points
