@@ -47,7 +47,7 @@ def writeCentroids(centroids):
 
 def readTerrainXYZWindninja(filename):
     data = []
-    with open(path_windninja + "converted/" + filename, 'r') as file:
+    with open(path_windninja + "terrain-testing/" + filename, 'r') as file:
         for line in file:
             parts = line.split()
             x = float(parts[0])

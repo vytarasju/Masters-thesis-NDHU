@@ -26,20 +26,20 @@ max_distance_WPT = 500 #meters
 # terrain = generateTerrain(width, length, scale, octaves, persistence, lacunarity, seed)
 
 # local_terrain - real terrain data, 
-terrain = local_terrain = readTerrainXYZWindninja('local_muchsmall.xyz')
+terrain = local_terrain = readTerrainXYZWindninja('xyz-NASADEM.xyz')
 terrain = convertXYZtoMeters(terrain)
 
 # Read wind data from ASC and make a list with terrain data together
-wind = readWindASCWindninja(terrain, "local_muchsmall_0_3_11m_vel.asc", "local_muchsmall_0_3_11m_ang.asc")
+# wind = readWindASCWindninja(terrain, "local_muchsmall_0_3_11m_vel.asc", "local_muchsmall_0_3_11m_ang.asc")
 
-sensors = generateSensors(terrain, sensors_num)
+# sensors = generateSensors(terrain, sensors_num)
 # centroids = clusterKMeans(terrain, sensors, cluster_num)
-centroids = clusterXMeans(terrain, sensors, min_hover_WPT, max_distance_WPT)
+# centroids = clusterXMeans(terrain, sensors, min_hover_WPT, max_distance_WPT)
 # plot(terrain=terrain, sensors=sensors, centroids=centroids)
-print(len(centroids))
-plot(terrain=terrain, centroids=centroids)
 
-writeTerrain(terrain)
-writeSensors(sensors)
-writeCentroids(centroids)
-writeWind(wind)
+plot(terrain=terrain)
+
+# writeTerrain(terrain)
+# writeSensors(sensors)
+# writeCentroids(centroids)
+# writeWind(wind)
