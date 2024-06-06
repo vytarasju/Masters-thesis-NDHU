@@ -1,5 +1,5 @@
 import sys
-path_windninja = "/home/vytska/Masters-thesis-NDHU/code/windninja/"
+path_windninja = "/home/vytska/thesis/code/windninja/"
 
 # Check if arguments are provided
 if len(sys.argv) < 1:

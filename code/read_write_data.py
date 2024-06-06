@@ -2,8 +2,8 @@ import numpy as np
 import csv
 import os
 
-path_csv = "/home/vytska/Masters-thesis-NDHU/code/csv"
-path_windninja = "/home/vytska/Masters-thesis-NDHU/code/windninja/"
+path_csv = "/home/vytska/thesis/code/csv"
+path_windninja = "/home/vytska/thesis/code/windninja/"
 os.chdir(path_csv)
 
 #reading terrain data
@@ -47,7 +47,7 @@ def writeCentroids(centroids):
 
 def readTerrainXYZWindninja(filename):
     data = []
-    with open(path_windninja + "terrain-testing/" + filename, 'r') as file:
+    with open(path_windninja + "converted/" + filename, 'r') as file:
         for line in file:
             parts = line.split()
             x = float(parts[0])

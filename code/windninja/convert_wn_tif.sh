@@ -9,11 +9,8 @@ fi
 # Path to the tif folder
 tif_folder="./tif"
 
-# Check if the tif folder exists
-if [ ! -d "$tif_folder" ]; then
-    echo "Error: tif folder not found in the current directory."
-    exit 1
-fi
+# Create tif folder if it is not present
+mkdir -p "$tif_folder"
 
 # Extracting filename and extension
 filename=$(basename -- "$1")
