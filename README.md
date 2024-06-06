@@ -1,6 +1,6 @@
 # Masters-thesis-NDHU
 
-Main reporository for my Master's thesis, including code and drafts for paper.
+Main repository for my Master's thesis, including code and drafts for paper.
 
 Overleaf: https://www.overleaf.com/read/kfgtqrrjvggd#6d6fa1
 
