@@ -15,7 +15,7 @@ UAV_elevation = 39 #meters
 UAV_steps = 3 #steps between points
 """END Parameter Defintion"""
 
-measurements = DefineMeasurements(terrain=terrain)
+measurements = UAV(terrain=terrain)
 
 motion, motion_consumption = getMotion(centroids, terrain, num_points = UAV_speed,
                                       elevation=UAV_elevation, cost = 'consumption',

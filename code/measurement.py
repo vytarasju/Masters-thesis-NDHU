@@ -1,7 +1,7 @@
 import numpy as np
 import math
 
-class DefineMeasurements:
+class UAV:
     def __init__(self,terrain, height_width = 1, total_cost = 0, motion_cost = np.array([])):
         # Distance measured in meters
         self.terrain = []
@@ -135,3 +135,35 @@ class DefineMeasurements:
         else:
             print("ERROR: Neither total_cost, nor motion_cost were provided initially")
             return 0
+
+class WPT:
+    def __init__(self):
+        self.power_transmitter = 1 #Watts
+        self.diameter_at_meter = 5 #meters
+
+
+        # """Initializse individual parameters"""
+        # self.gain_transmitter = 0 #dBi
+        # self.gain_receiver = 0 #dBi
+        # self.wavelength = 0
+        # self.rectifier_efficiency = 0
+        # self.polarization_loss = 0
+        self.pathloss_coefficient = 2
+        self.friis_adjustable_var = 30
+
+        # self.charging_efficiency_constants = ((self.gain_transmitter * self.gain_receiver * self.rectifier_efficiency) / self.polarization_loss) \
+        #                                      * ((self.wavelength / (4 * math.pi))**self.pathloss_coefficient)
+
+        """References are providing only the result of constants"""
+        self.charging_efficiency_constants = 36
+
+    def powerReceivedBySensor(self, distance):
+        charging_efficiency = self.charging_efficiency_constants / ((distance + self.friis_adjustable_var)**self.pathloss_coefficient)
+        power_received = charging_efficiency * self.power_transmitter
+        return power_received
+        
+
+# Acumulative formula for summing all the power consumtion in the mission
+# Output: total power consumption used in the whole mission
+def TotalPowerConsumption(consumption_UAV_flight, consumption_UAV_hover, consumption_UAV_vertical, consumption_WPT_charge):
+    return consumption_UAV_flight + consumption_UAV_hover + consumption_UAV_vertical + consumption_WPT_charge

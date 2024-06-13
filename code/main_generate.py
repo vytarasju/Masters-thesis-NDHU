@@ -20,6 +20,7 @@ cluster_num = 5 # Used in KMeans
 # Created for XYZ terrain, where it is already metered
 min_hover_WPT = 10 #meters
 max_distance_WPT = 500 #meters
+#!!! ADD angle of WPT power delivery, so I could check if the sensor is over the angle of WPT delivery or inside it
 """END Parameter Defintion"""
 
 # generateTerrain - randomized terrain data

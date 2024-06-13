@@ -24,7 +24,7 @@ ant_colony = AntColony(motion_distance, num_ants=80, num_iterations=50,
                        evaporation_rate=0.5, alpha=1, beta=1)
 aco_path, aco_distance = ant_colony.find_shortest_path()
 
-measurements = DefineMeasurements(terrain=terrain, height_width=height_width_ratio, 
+measurements = UAV(terrain=terrain, height_width=height_width_ratio, 
                                   total_cost=aco_distance, motion_cost=motion_distance)
 
 distance_measured, motion_measured = measurements.convertDistancetoMeasurements(type='milliamphours', speed=UAV_speed)
