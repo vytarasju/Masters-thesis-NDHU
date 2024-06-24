@@ -2,41 +2,13 @@ import numpy as np
 from sklearn.cluster import KMeans
 import math
 import statistics
-
+from measurement import UAV, WPT
 
 def getCenterPoint(terrain):
     x, y = statistics.median(terrain[:, 0]), statistics.median(terrain[:, 1])
     # Takes euclidean distance between x and y values and returns index of smallest distance
     point_index = np.argmin((terrain[:, 0] - x)**2 + (terrain[:, 1] - y)**2)
     return terrain[point_index]
-
-"""
-   Define XMeans for XYZ specifically (since it already gives precise terrain distances)
-   and create clusters, so that each cluster would fit in a specific radius
-   to ensure, that at each SN centroid WPT would reach all of the sensors
-"""
-def clusterXMeans(terrain, sensors, min_hover, max_distance):
-    center_point = getCenterPoint(terrain)
-    sensor_num = len(sensors)
-
-    cluster_num = 1
-    sensors_in_range = False
-    while sensors_in_range == False:
-        kmeans = KMeans(n_clusters=cluster_num, n_init=10)
-        kmeans.fit(sensors)
-        sensors_in_range = True
-        for i in range(sensor_num):
-            centroid = kmeans.cluster_centers_[kmeans.labels_[i]]
-            hover_point = [centroid[0], centroid[1], (centroid[2] + min_hover)]
-            sensor = sensors[i]
-            distance = round(np.sqrt(np.sum(np.power((hover_point - sensor), 2))), 2)
-            if distance > max_distance: 
-                sensors_in_range = False
-                cluster_num += 1
-                break
-    
-    centroids = np.vstack((center_point, kmeans.cluster_centers_))
-    return centroids
 
 def clusterKMeans(terrain, sensors, n_clusters):
     center_point = getCenterPoint(terrain)
@@ -47,6 +19,83 @@ def clusterKMeans(terrain, sensors, n_clusters):
 
     centroids = np.vstack((center_point, kmeans.cluster_centers_))
     return centroids
+
+def clusterXMeansDistance(terrain, sensors, min_hover, max_distance):
+    center_point = getCenterPoint(terrain)
+    sensor_num = len(sensors)
+
+    K_value = 1
+    sensors_in_range = False
+    while sensors_in_range == False:
+        kmeans = KMeans(n_clusters=K_value, n_init=10)
+        kmeans.fit(sensors)
+        sensors_in_range = True
+        for i in range(sensor_num):
+            centroid = kmeans.cluster_centers_[kmeans.labels_[i]]
+            hover_point = [centroid[0], centroid[1], (centroid[2] + min_hover)]
+            sensor = sensors[i]
+            distance = round(np.sqrt(np.sum(np.power((hover_point - sensor), 2))), 2)
+            if distance > max_distance: 
+                sensors_in_range = False
+                K_value += 1
+                break
+    
+    centroids = np.vstack((center_point, kmeans.cluster_centers_))
+    return centroids
+
+def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provide_charge):
+    center_point = getCenterPoint(terrain)
+    sensor_num = len(sensors)
+
+    wpt = WPT()
+    drone = UAV()
+    K_value = 1
+    # Iterate until can't increase K_value or solution is found
+    while K_value <= sensor_num:
+        kmeans = KMeans(n_clusters=K_value, n_init=10)
+        kmeans.fit(sensors)
+        # Get arrays with each sensor assigned to clusters
+        clustered_sensors = [[] for _ in range(K_value)]
+        for index, label in enumerate(kmeans.labels_):
+            clustered_sensors[label].append(sensors[index])
+        sensor_center_distance = [[] for _ in range(K_value)]
+        for index, center in enumerate(kmeans.cluster_centers_):
+            # Get distance for each sensor to its cluster center
+            for sensor in clustered_sensors[index]:
+                distance = round(np.sqrt(np.sum(np.power((center - sensor), 2))), 2)
+                sensor_center_distance[index].append(distance)
+        # cluster_hover_point = [0 for _ in range(cluster_num)]
+        total_charge_time = 0
+        for index, center in enumerate(kmeans.cluster_centers_):
+            furthest_sensor_center_distance = max(sensor_center_distance[index])
+            # Get XYZ of the furthest sensor from center of cluster
+            furthest_sensor_center = clustered_sensors[index][sensor_center_distance[index].index(furthest_sensor_center_distance)]
+            # Get lowest height for UAV to reach all sensors
+            cluster_hover_height = furthest_sensor_center_distance / math.tan((angle / 2))
+            # Check if hover point is not lower than set boundary
+            if cluster_hover_height < lowest_hover_height: cluster_hover_height = lowest_hover_height
+            # Get exact hovering point of UAV
+            cluster_hover_point = [center[0], center[1], center[2] + cluster_hover_height]
+            furthest_sensor_UAV_distance = 0
+            for sensor in clustered_sensors[index]:
+                # Get distance between hover point and furthest sensor
+                distance = round(np.sqrt(np.sum(np.power((cluster_hover_point - sensor), 2))), 2)
+                if distance > furthest_sensor_UAV_distance: furthest_sensor_UAV_distance = distance
+            total_charge_time += wpt.chargeTime(furthest_sensor_UAV_distance, provide_charge)
+        # If Charging time is equals to or exceedes UAV operation time, this k is not the solution
+        print(f'k: {K_value}, total_charge: {total_charge_time}')
+        if total_charge_time >= drone.maximum_operation_time:
+            K_value += 1
+            print(sensor_center_distance)
+            continue
+        else: 
+            centroids = np.vstack((center_point, kmeans.cluster_centers_))
+            return centroids
+    # If solution was not found, no solution exists
+    print('CRITICAL ERROR: No K Value has been found in clusterXMeansChargeTime()')
+    return 0
+
+
 
 #using euclidean distance between 2 points
 #returning matrix of distance between each centroid points
@@ -85,15 +134,18 @@ def getPowerInWind(speed, UAV_parameters, wind_speed, wind_angle, x_difference, 
 # Takes distance between each point and converts it to motion of a drone
 # Was made originally, because dirrect path between points was going through terrain
 def getMotion(centroids, terrain, num_points=20, elevation=0.1, 
-              cost = 'distance', speed = 0, UAV_parameters = 0, wind = 0):
+              cost = 'distance', UAV_parameters: UAV = None, wind = 0):
     iteration = 0
     motion_matrix = []
     cost_matrix = []
-
+    speed = 0
+    
     # Error handling for wrong parameter inputs
-    if cost == 'consumption' and (speed == 0 or UAV_parameters == 0):
-        print('ERROR: consumption requires speed, UAV_parameters and wind for getMotion parameters')
-        return
+    if cost == 'consumption':
+        if UAV_parameters is None:
+            print('ERROR: variable of UAV class not provided')
+        try: speed = UAV_parameters.UAV_max_speed
+        except Exception as e: print(f'ERROR: unexpected error occurred: {e}')
     
     if cost != 'consumption' and cost != 'distance':
         print('ERROR: no such cost parameter is defined')
@@ -155,7 +207,7 @@ def getMotion(centroids, terrain, num_points=20, elevation=0.1,
             iteration += 1
     return motion_matrix, np.array(cost_matrix)
 
-        
+# Converts XYZ file each point coordinate values to metered values
 def convertXYZtoMeters(terrain):
     terrain_converted = []
     terrain = terrain.tolist()
@@ -170,7 +222,3 @@ def convertXYZtoMeters(terrain):
         terrain_converted.append(point_converted)
     
     return np.array(terrain_converted)
-
-# Takes distance and 
-def getMotionConsumtion(centroids, terrain, num_points=20, elevation=0.1):
-    return

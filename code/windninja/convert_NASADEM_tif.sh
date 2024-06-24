@@ -1,5 +1,5 @@
 #!/bin/bash
-#Path to the tif folder
+#Path to the tar.gz folder
 NASADEM_folder="./NASADEM"
 
 #Check if filename is provided as argument
@@ -8,7 +8,7 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-#Check if the tif folder exists
+#Check if the tar.gz folder exists
 if [ ! -d "$NASADEM_folder" ]; then
     echo "Error: NASADEM folder not found in the current directory."
     mkdir -p "$NASADEM_folder"
@@ -22,7 +22,7 @@ filename=$(basename -- "$1")
 
 if [[ "$filename" == *.tar.gz ]]; then
     tar -xzf "$filename"
-    rm -r "$filename"
+    # rm -r "$filename"
 else
     echo "Error: non ".tar.gz" file provided"
     exit 1

@@ -31,6 +31,8 @@ terrain_data, metadata = readASCFile(input_string)
 num_lines = len(terrain_data)
 num_rows = len(terrain_data[0])
 
+print(num_rows, num_lines)
+
 #Reshape ASC based on which part has the excess
 if num_rows > num_lines:
     terrain_reshaped = []
