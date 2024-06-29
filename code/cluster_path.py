@@ -46,7 +46,6 @@ def clusterXMeansDistance(terrain, sensors, min_hover, max_distance):
 def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provide_charge):
     center_point = getCenterPoint(terrain)
     sensor_num = len(sensors)
-
     wpt = WPT()
     drone = UAV()
     K_value = 1
@@ -54,24 +53,27 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
     while K_value <= sensor_num:
         kmeans = KMeans(n_clusters=K_value, n_init=10)
         kmeans.fit(sensors)
-        # Get arrays with each sensor assigned to clusters
+        wpt_area = []
         clustered_sensors = [[] for _ in range(K_value)]
+        # Get arrays with each sensor assigned to clusters
         for index, label in enumerate(kmeans.labels_):
             clustered_sensors[label].append(sensors[index])
         sensor_center_distance = [[] for _ in range(K_value)]
+        # Get distance for each sensor to its cluster center
         for index, center in enumerate(kmeans.cluster_centers_):
-            # Get distance for each sensor to its cluster center
             for sensor in clustered_sensors[index]:
                 distance = round(np.sqrt(np.sum(np.power((center - sensor), 2))), 2)
                 sensor_center_distance[index].append(distance)
-        # cluster_hover_point = [0 for _ in range(cluster_num)]
         total_charge_time = 0
         for index, center in enumerate(kmeans.cluster_centers_):
             furthest_sensor_center_distance = max(sensor_center_distance[index])
-            # Get XYZ of the furthest sensor from center of cluster
+            # Get XYZ of the furthest sensor from center of cluster and get straight line 
+            # distance to the center point XY values at the same Z level as the furthest point
             furthest_sensor_center = clustered_sensors[index][sensor_center_distance[index].index(furthest_sensor_center_distance)]
+            furthest_sensor_at_centerline = [center[0], center[1], furthest_sensor_center[2]]
+            diameter = round(np.sqrt(np.sum(np.power((furthest_sensor_center - furthest_sensor_at_centerline), 2))), 2)
             # Get lowest height for UAV to reach all sensors
-            cluster_hover_height = furthest_sensor_center_distance / math.tan((angle / 2))
+            cluster_hover_height = diameter / math.tan((angle / 2))
             # Check if hover point is not lower than set boundary
             if cluster_hover_height < lowest_hover_height: cluster_hover_height = lowest_hover_height
             # Get exact hovering point of UAV
@@ -82,20 +84,19 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
                 distance = round(np.sqrt(np.sum(np.power((cluster_hover_point - sensor), 2))), 2)
                 if distance > furthest_sensor_UAV_distance: furthest_sensor_UAV_distance = distance
             total_charge_time += wpt.chargeTime(furthest_sensor_UAV_distance, provide_charge)
+            wpt_area.append([center, cluster_hover_height, furthest_sensor_center_distance])
         # If Charging time is equals to or exceedes UAV operation time, this k is not the solution
         print(f'k: {K_value}, total_charge: {total_charge_time}')
         if total_charge_time >= drone.maximum_operation_time:
             K_value += 1
-            print(sensor_center_distance)
             continue
         else: 
+            print(f'Found solution at K value: {K_value}')
             centroids = np.vstack((center_point, kmeans.cluster_centers_))
-            return centroids
+            return centroids, wpt_area
     # If solution was not found, no solution exists
     print('CRITICAL ERROR: No K Value has been found in clusterXMeansChargeTime()')
     return 0
-
-
 
 #using euclidean distance between 2 points
 #returning matrix of distance between each centroid points

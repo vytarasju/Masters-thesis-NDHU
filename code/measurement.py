@@ -148,17 +148,17 @@ class WPT:
     def __init__(self):
         # Specs taken from PowerCast TX91501B
 
-        self.power_transmitter = 600 #Watts
+        self.power_transmitter = 2000 #Watts
         self.supply_voltage = 5 #V
         # self.diameter_at_meter = 5 #meters 
 
-        # """Initializse individual parameters"""
+        """Initializse individual parameters"""
         self.gain_transmitter = 8 #dBi
         self.gain_receiver = 2 #dBi
         self.wavelength = 0.33
-        #rectifier efficiency taken from PowerCast PCC110
-        #originally it is 0.125 from reference
-        self.rectifier_efficiency = 0.75 #RF to DC conversion
+        # Original Reference: 0.125; from PowerCast PCC110: 0.75
+        self.rectifier_efficiency = 0.85 #RF to DC conversion
+        # Original Reference: 3.16105
         self.polarization_loss = 3.16105
         self.pathloss_coefficient = 2
         self.friis_adjustable_var = 0.2316
@@ -177,8 +177,10 @@ class WPT:
             charging_efficiency = self.charging_efficiency_constants / ((distance + self.friis_adjustable_var)**self.pathloss_coefficient)
             power_received = charging_efficiency * self.power_transmitter
             return power_received
-        charging_power = powerReceivedBySensor(distance)
-        charge_time = ((charge_needed / 1000) / charging_power) * 3600
+        charging_power_watt = powerReceivedBySensor(distance)
+        charging_power_milliamp = charging_power_watt / self.supply_voltage
+        charge_time = ((charge_needed / 1000) / charging_power_milliamp) * 3600
+        # charge_time = ((charge_needed / 1000) / charging_power_watt) * 3600
         return charge_time
     
     # Gives how much battery capacity WPT would use when operating for a specified time
@@ -274,15 +276,15 @@ class IoTDevice:
         
         return mc_charge + sensor_charge
 
-# drone = UAV()
-# device = IoTDevice()
-# wpt = WPT()
-# distance_between_WPTSensor = 2
-# print(f'absolute maximum operation time possible with drone: {(drone.maximum_operation_time / 60):.2f} minutes')
-# charge_used = device.batteryConsumtionGivenTime(0,drone.maximum_operation_time)
-# time_to_charge = wpt.chargeTime(distance_between_WPTSensor, charge_used)
-# print(f'{(time_to_charge / 60):.2f} minutes to charge at {distance_between_WPTSensor} meters distance for max drone op time')
-# print(f'WPT would use {wpt.chargeConsumptionGivenTime(time_to_charge):.2f} mAh to complete this charging')
+drone = UAV()
+device = IoTDevice()
+wpt = WPT()
+distance_between_WPTSensor = 2
+print(f'absolute maximum operation time possible with drone: {(drone.maximum_operation_time / 60):.2f} minutes')
+charge_used = device.batteryConsumtionGivenTime(0,drone.maximum_operation_time)
+time_to_charge = wpt.chargeTime(distance_between_WPTSensor, charge_used)
+print(f'{(time_to_charge / 60):.2f} minutes to charge at {distance_between_WPTSensor} meters distance for max drone op time')
+print(f'WPT would use {wpt.chargeConsumptionGivenTime(time_to_charge):.2f} mAh to complete this charging')
 
 # Acumulative formula for summing all the power consumtion in the mission
 # Output: total power consumption used in the whole mission

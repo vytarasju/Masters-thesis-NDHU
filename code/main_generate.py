@@ -14,7 +14,7 @@ lacunarity = 1.8
 seed = 15
 
 # Number of sensors: Used by all clustering methods
-sensors_num = 50
+sensors_num = 100
 # For KMeans
 cluster_num = 5 
 
@@ -22,7 +22,7 @@ cluster_num = 5
 # Created for XYZ terrain, where it is already metered
 min_hover_WPT = 2 #meters
 # For XMeansChargeTime
-angle_WPT = 60
+angle_WPT = 120
 # For XMeansDistance
 max_distance_WPT = 500 #meters
 #!!! ADD angle of WPT power delivery, so I could check if the sensor is over the angle of WPT delivery or inside it
@@ -32,7 +32,7 @@ max_distance_WPT = 500 #meters
 # terrain = generateTerrain(width, length, scale, octaves, persistence, lacunarity, seed)
 
 # Real terrain data
-terrain  = readTerrainXYZWindninja('output_NASADEM.xyz')
+terrain  = readTerrainXYZWindninja('output_NASADEM_old.xyz')
 # terrain  = readTerrainXYZWindninja('local_small.xyz')
 # terrain = convertXYZtoMeters(terrain)
 
@@ -46,15 +46,14 @@ sensors = generateSensors(terrain, sensors_num)
 
 drone = UAV()
 IOT = IoTDevice()
-#drone.maximum_operation_time
-provide_charge = IOT.batteryConsumtionGivenTime(0, 500)
+provide_charge = IOT.batteryConsumtionGivenTime(0, drone.maximum_operation_time)
 
-centroids = clusterXMeansChargeTime(terrain, sensors, angle_WPT, min_hover_WPT, provide_charge)
-plot(terrain=terrain, sensors=sensors, centroids=centroids)
+centroids, wpt_area = clusterXMeansChargeTime(terrain, sensors, angle_WPT, min_hover_WPT, provide_charge)
+plot(terrain=terrain, sensors=sensors, centroids=centroids, wpt_area=wpt_area)
 
 # plot(terrain=terrain)
 
-# writeTerrain(terrain)
-# writeSensors(sensors)
-# writeCentroids(centroids)
-# writeWind(wind)
+writeTerrain(terrain)
+writeSensors(sensors)
+writeCentroids(centroids)
+writeWind(wind)

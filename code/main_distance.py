@@ -35,7 +35,7 @@ print(f'Total milliamphour consumtion: {distance_measured}')
 
 print(f'Path sequence: {aco_path}')
 
-plot(centroids=centroids, terrain=terrain, motion=motion)
+plot(centroids=centroids, terrain=terrain, path=aco_path)
 
 
 
