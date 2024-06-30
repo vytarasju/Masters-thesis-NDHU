@@ -276,17 +276,27 @@ class IoTDevice:
         
         return mc_charge + sensor_charge
 
-drone = UAV()
-device = IoTDevice()
-wpt = WPT()
-distance_between_WPTSensor = 2
-print(f'absolute maximum operation time possible with drone: {(drone.maximum_operation_time / 60):.2f} minutes')
-charge_used = device.batteryConsumtionGivenTime(0,drone.maximum_operation_time)
-time_to_charge = wpt.chargeTime(distance_between_WPTSensor, charge_used)
-print(f'{(time_to_charge / 60):.2f} minutes to charge at {distance_between_WPTSensor} meters distance for max drone op time')
-print(f'WPT would use {wpt.chargeConsumptionGivenTime(time_to_charge):.2f} mAh to complete this charging')
+"""Testing BEGIN"""
+# drone = UAV()
+# device = IoTDevice()
+# wpt = WPT()
 
-# Acumulative formula for summing all the power consumtion in the mission
-# Output: total power consumption used in the whole mission
-def TotalPowerConsumption(consumption_UAV_flight, consumption_UAV_hover, consumption_UAV_vertical, consumption_WPT_charge):
-    return consumption_UAV_flight + consumption_UAV_hover + consumption_UAV_vertical + consumption_WPT_charge
+# angle = 120
+# cluster_list = [[1.47, 1.47], [1.35, 1.35], [3.2, 3.2]]
+# print(f'absolute maximum operation time possible with drone: {(drone.maximum_operation_time / 60):.2f} minutes')
+# charge_used = device.batteryConsumtionGivenTime(0,drone.maximum_operation_time)
+# time_sum = 0
+
+# for cluster in cluster_list:
+#     max_distance = max(dis for dis in cluster) / 2
+#     print(f'center between 2 points: {max_distance}')
+#     cluster_hover_height = max_distance / math.tan(math.radians(angle / 2))
+#     if cluster_hover_height < 2: cluster_hover_height = 2
+#     # print(f'tan {math.tan(math.radians(angle / 2))} hover height {cluster_hover_height}')
+#     time_to_charge = wpt.chargeTime(cluster_hover_height, charge_used)
+#     print(f'{(time_to_charge / 60):.2f} minutes to charge at {cluster_hover_height} meters distance for max drone op time')
+#     # print(f'WPT would use {wpt.chargeConsumptionGivenTime(time_to_charge):.2f} mAh to complete this charging')
+#     time_sum += time_to_charge
+
+# print(f'Total time taken {time_sum}')
+"""Testing END"""

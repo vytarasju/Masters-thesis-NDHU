@@ -10,39 +10,6 @@ def getCenterPoint(terrain):
     point_index = np.argmin((terrain[:, 0] - x)**2 + (terrain[:, 1] - y)**2)
     return terrain[point_index]
 
-def clusterKMeans(terrain, sensors, n_clusters):
-    center_point = getCenterPoint(terrain)
-
-    #n_init set to surpress warning messages
-    kmeans = KMeans(n_clusters=n_clusters, n_init=10)
-    kmeans.fit(sensors)
-
-    centroids = np.vstack((center_point, kmeans.cluster_centers_))
-    return centroids
-
-def clusterXMeansDistance(terrain, sensors, min_hover, max_distance):
-    center_point = getCenterPoint(terrain)
-    sensor_num = len(sensors)
-
-    K_value = 1
-    sensors_in_range = False
-    while sensors_in_range == False:
-        kmeans = KMeans(n_clusters=K_value, n_init=10)
-        kmeans.fit(sensors)
-        sensors_in_range = True
-        for i in range(sensor_num):
-            centroid = kmeans.cluster_centers_[kmeans.labels_[i]]
-            hover_point = [centroid[0], centroid[1], (centroid[2] + min_hover)]
-            sensor = sensors[i]
-            distance = round(np.sqrt(np.sum(np.power((hover_point - sensor), 2))), 2)
-            if distance > max_distance: 
-                sensors_in_range = False
-                K_value += 1
-                break
-    
-    centroids = np.vstack((center_point, kmeans.cluster_centers_))
-    return centroids
-
 def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provide_charge):
     center_point = getCenterPoint(terrain)
     sensor_num = len(sensors)
@@ -73,7 +40,7 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
             furthest_sensor_at_centerline = [center[0], center[1], furthest_sensor_center[2]]
             diameter = round(np.sqrt(np.sum(np.power((furthest_sensor_center - furthest_sensor_at_centerline), 2))), 2)
             # Get lowest height for UAV to reach all sensors
-            cluster_hover_height = diameter / math.tan((angle / 2))
+            cluster_hover_height = diameter / math.tan(math.radians(angle / 2))
             # Check if hover point is not lower than set boundary
             if cluster_hover_height < lowest_hover_height: cluster_hover_height = lowest_hover_height
             # Get exact hovering point of UAV
@@ -86,14 +53,14 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
             total_charge_time += wpt.chargeTime(furthest_sensor_UAV_distance, provide_charge)
             wpt_area.append([center, cluster_hover_height, furthest_sensor_center_distance])
         # If Charging time is equals to or exceedes UAV operation time, this k is not the solution
-        print(f'k: {K_value}, total_charge: {total_charge_time}')
+        print(f'k: {K_value}, total_charge: {total_charge_time / 60} min')
         if total_charge_time >= drone.maximum_operation_time:
             K_value += 1
             continue
         else: 
             print(f'Found solution at K value: {K_value}')
             centroids = np.vstack((center_point, kmeans.cluster_centers_))
-            return centroids, wpt_area
+            return centroids, wpt_area, total_charge_time
     # If solution was not found, no solution exists
     print('CRITICAL ERROR: No K Value has been found in clusterXMeansChargeTime()')
     return 0
@@ -139,6 +106,7 @@ def getMotion(centroids, terrain, num_points=20, elevation=0.1,
     iteration = 0
     motion_matrix = []
     cost_matrix = []
+    time_matrix = []
     speed = 0
     
     # Error handling for wrong parameter inputs
@@ -154,13 +122,16 @@ def getMotion(centroids, terrain, num_points=20, elevation=0.1,
 
     for index1, point1 in enumerate(centroids):
         cost_matrix.append([])
+        time_matrix.append([])
         for index2, point2 in enumerate(centroids):
             if np.array_equal(point1, point2): 
                 cost_matrix[index1].append(0.0)
+                time_matrix[index1].append(0.0)
                 continue
             motion_matrix.append([[], index1, index2])
             distance, total_distance = 0, 0
             milliamphour, total_milliamphour = 0, 0
+            total_seconds = 0
 
             for i in range(num_points):
                 t = i / (num_points - 1)  # Parameter t ranges from 0 to 1
@@ -202,11 +173,14 @@ def getMotion(centroids, terrain, num_points=20, elevation=0.1,
                     watthour = wind_power_consumption  * (seconds / 3600)
                     milliamphour = watthour / UAV_parameters.battery_voltage * 1000
                     total_milliamphour += milliamphour
+                    total_seconds += seconds
 
             if cost == 'distance': cost_matrix[index1].append(total_distance)
-            if cost == 'consumption': cost_matrix[index1].append(total_milliamphour)
+            if cost == 'consumption': 
+                cost_matrix[index1].append(total_milliamphour)
+                time_matrix[index1].append(total_seconds)
             iteration += 1
-    return motion_matrix, np.array(cost_matrix)
+    return motion_matrix, np.array(cost_matrix), time_matrix
 
 # Converts XYZ file each point coordinate values to metered values
 def convertXYZtoMeters(terrain):

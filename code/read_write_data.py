@@ -84,3 +84,25 @@ def writeWind(wind):
         for point in wind:
                 writer.writerow([point[0][0], point[0][1], point[0][2], point[1], point[2]])
     print("Wind data saved to wind_data.csv")
+
+def writeWPT(charge_time, charge_consumption, charging_points):
+    with open('WPT_data.csv', mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['WPT_charge_time', charge_time])
+        writer.writerow(['WPT_charge_consumption', charge_consumption])
+        writer.writerow(['center', 'cluster_hover_height', 'furthest_sensor_center_distance'])
+        for point in charging_points:
+                writer.writerow(point)
+    print("WPT data saved to WPT_data.csv")
+
+def readWPT(filename):
+    data = []
+    with open(filename, mode='r') as file:
+        reader = list(csv.reader(file))
+        for index, line in enumerate(reader):
+            if index > 2:
+                center = np.array(line[0].strip('[]').split(), dtype=float)
+                data.append([center, float(line[1]), float(line[2])])
+            elif index == 0: WPT_charge_consumption = line[1]
+            elif index == 1: WPT_charge_time = line[1]
+    return WPT_charge_time, WPT_charge_consumption, data

@@ -69,9 +69,9 @@ def plot(terrain = np.empty((0,)), centroids = np.empty((0,)),
             plotCone(radius, center, heigth, 3)
 
     # Set labels and title
-    ax.set_xlabel('X Label')
-    ax.set_ylabel('Y Label')
-    ax.set_zlabel('Z Label')
+    ax.set_xlabel('X Axis')
+    ax.set_ylabel('Y Axis')
+    # ax.set_zlabel('Z Label')
     ax.set_title('UAV IOT Recharging Path Planning')
 
     plt.show()
