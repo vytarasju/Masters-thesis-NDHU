@@ -45,11 +45,11 @@ class UAV:
         self.rotor_mean_induced_velocity = math.sqrt(self.UAV_weight / (2 * self.air_density * self.rotor_disc_area))
 
         # Gets maximum operation time
-        crusing_speed_consumption = self.getPropulsionPowerConsumtion(self.UAV_max_speed)
+        hovering_power_consumption = self.getPropulsionPowerConsumtion(0)
         # Battery used for a second of set speed operation
-        crusing_persecond_watthour = crusing_speed_consumption / 3600
-        crusing_persecond_charge = crusing_persecond_watthour / self.battery_voltage * 1000
-        self.maximum_operation_time = math.floor(self.battery_capacity / crusing_persecond_charge)
+        hovering_persecond_watthour = hovering_power_consumption / 3600
+        hovering_persecond_charge = hovering_persecond_watthour / self.battery_voltage * 1000
+        self.minimum_operation_time = math.floor(self.battery_capacity / hovering_persecond_charge)
 
     """ Takes speed meters/second and returns power required
      to achieve that specific distance in meters per seconds

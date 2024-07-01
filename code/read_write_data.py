@@ -45,7 +45,7 @@ def writeCentroids(centroids):
                 writer.writerow([centroid[0], centroid[1], centroid[2]])
     print("Centroids coordinates saved to centroid_coordinates.csv")
 
-def readTerrainXYZWindninja(filename):
+def readTerrainXYZ(filename):
     data = []
     with open(path_windninja + "converted/" + filename, 'r') as file:
         for line in file:

@@ -4,34 +4,45 @@ import math
 import statistics
 from measurement import UAV, WPT
 
+# Initiate for further use
+wpt = WPT()
+drone = UAV()
+
 def getCenterPoint(terrain):
     x, y = statistics.median(terrain[:, 0]), statistics.median(terrain[:, 1])
     # Takes euclidean distance between x and y values and returns index of smallest distance
     point_index = np.argmin((terrain[:, 0] - x)**2 + (terrain[:, 1] - y)**2)
     return terrain[point_index]
 
-def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provide_charge):
+def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provide_charge, K_value = 'NA'):
+    cluster_hover_time = []
     center_point = getCenterPoint(terrain)
     sensor_num = len(sensors)
-    wpt = WPT()
-    drone = UAV()
-    K_value = 1
+    if K_value == 'NA': K_value = 1
+
     # Iterate until can't increase K_value or solution is found
     while K_value <= sensor_num:
+        # Find solution with current K_value
         kmeans = KMeans(n_clusters=K_value, n_init=10)
         kmeans.fit(sensors)
+
+        # Clear list values
         wpt_area = []
+        cluster_hover_time = []
         clustered_sensors = [[] for _ in range(K_value)]
+
         # Get arrays with each sensor assigned to clusters
         for index, label in enumerate(kmeans.labels_):
             clustered_sensors[label].append(sensors[index])
         sensor_center_distance = [[] for _ in range(K_value)]
+
         # Get distance for each sensor to its cluster center
         for index, center in enumerate(kmeans.cluster_centers_):
             for sensor in clustered_sensors[index]:
                 distance = round(np.sqrt(np.sum(np.power((center - sensor), 2))), 2)
                 sensor_center_distance[index].append(distance)
         total_charge_time = 0
+
         for index, center in enumerate(kmeans.cluster_centers_):
             furthest_sensor_center_distance = max(sensor_center_distance[index])
             # Get XYZ of the furthest sensor from center of cluster and get straight line 
@@ -46,21 +57,27 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
             # Get exact hovering point of UAV
             cluster_hover_point = [center[0], center[1], center[2] + cluster_hover_height]
             furthest_sensor_UAV_distance = 0
+
             for sensor in clustered_sensors[index]:
                 # Get distance between hover point and furthest sensor
                 distance = round(np.sqrt(np.sum(np.power((cluster_hover_point - sensor), 2))), 2)
                 if distance > furthest_sensor_UAV_distance: furthest_sensor_UAV_distance = distance
-            total_charge_time += wpt.chargeTime(furthest_sensor_UAV_distance, provide_charge)
+            
+            charge_time = wpt.chargeTime(furthest_sensor_UAV_distance, provide_charge)
+            total_charge_time += charge_time
+            cluster_hover_time.append(charge_time)
             wpt_area.append([center, cluster_hover_height, furthest_sensor_center_distance])
+
         # If Charging time is equals to or exceedes UAV operation time, this k is not the solution
-        print(f'k: {K_value}, total_charge: {total_charge_time / 60} min')
-        if total_charge_time >= drone.maximum_operation_time:
+        # print(f'k: {K_value}, total_charge: {total_charge_time / 60} min')
+        if total_charge_time >= drone.minimum_operation_time:
             K_value += 1
             continue
         else: 
             print(f'Found solution at K value: {K_value}')
             centroids = np.vstack((center_point, kmeans.cluster_centers_))
-            return centroids, wpt_area, total_charge_time
+            return centroids, wpt_area, cluster_hover_time, K_value
+        
     # If solution was not found, no solution exists
     print('CRITICAL ERROR: No K Value has been found in clusterXMeansChargeTime()')
     return 0
@@ -78,7 +95,7 @@ def getDistanceCentroids(centroids):
     return distance_matrix
 
 # Helper funciton for getMotion to calculate power needed for UAV flying in wind
-def getPowerInWind(speed, UAV_parameters, wind_speed, wind_angle, x_difference, y_difference):
+def getPowerInWind(wind_speed, wind_angle = 0, speed = 0, x_difference = 0, y_difference = 0, movement = 'fly'):
     UAV_speed_in_wind = 0
 
     # Calculate the angle with the reverse of y-axis 
@@ -96,43 +113,37 @@ def getPowerInWind(speed, UAV_parameters, wind_speed, wind_angle, x_difference, 
     # Get actual UAV speed with effect of wind
     # between 90 and 270 from UAV perspective - tailwind = increases speed
     # between 0, 90 and 270, 360 wind is against UAV - slowing it down
-    UAV_speed_in_wind = speed - (wind_speed * math.cos(math.radians(Wind_to_UAV_angle)))
-    return UAV_parameters.getPropulsionPowerConsumtion(UAV_speed_in_wind), UAV_speed_in_wind
+    if movement == 'fly': UAV_speed_in_wind = speed - (wind_speed * math.cos(math.radians(Wind_to_UAV_angle)))
+    elif movement == 'hover': UAV_speed_in_wind = wind_speed
+    return drone.getPropulsionPowerConsumtion(UAV_speed_in_wind), UAV_speed_in_wind
+
 
 # Takes distance between each point and converts it to motion of a drone
 # Was made originally, because dirrect path between points was going through terrain
-def getMotion(centroids, terrain, num_points=20, elevation=0.1, 
-              cost = 'distance', UAV_parameters: UAV = None, wind = 0):
+def getMotion(centroids, terrain, num_points=20, elevation=0.1, cost = 'distance', wind = 0):
     iteration = 0
     motion_matrix = []
-    cost_matrix = []
+    movement_matrix = []
     time_matrix = []
-    speed = 0
+    speed = drone.UAV_max_speed
     
     # Error handling for wrong parameter inputs
-    if cost == 'consumption':
-        if UAV_parameters is None:
-            print('ERROR: variable of UAV class not provided')
-        try: speed = UAV_parameters.UAV_max_speed
-        except Exception as e: print(f'ERROR: unexpected error occurred: {e}')
-    
     if cost != 'consumption' and cost != 'distance':
         print('ERROR: no such cost parameter is defined')
         return
 
     for index1, point1 in enumerate(centroids):
-        cost_matrix.append([])
+        movement_matrix.append([])
         time_matrix.append([])
         for index2, point2 in enumerate(centroids):
-            if np.array_equal(point1, point2): 
-                cost_matrix[index1].append(0.0)
+            if np.array_equal(point1, point2):
+                movement_matrix[index1].append(0.0)
                 time_matrix[index1].append(0.0)
                 continue
             motion_matrix.append([[], index1, index2])
-            distance, total_distance = 0, 0
-            milliamphour, total_milliamphour = 0, 0
-            total_seconds = 0
+            total_distance, total_milliamphour, total_time = 0, 0, 0
 
+            # Begin path segmentation
             for i in range(num_points):
                 t = i / (num_points - 1)  # Parameter t ranges from 0 to 1
                 x = (1 - t) * point1[0] + t * point2[0]
@@ -150,7 +161,9 @@ def getMotion(centroids, terrain, num_points=20, elevation=0.1,
                 z_difference = motion_matrix[iteration][0][i][2] - motion_matrix[iteration][0][i - 1][2]
                 distance = math.sqrt(x_difference**2 + y_difference**2 + z_difference**2)
                 
-                if cost == 'distance': total_distance += distance
+                if cost == 'distance':
+                    total_time +=  distance / UAV_speed
+                    total_distance += distance
 
                 """
                 Gets speed of wind against UAV when it is on angle
@@ -164,23 +177,48 @@ def getMotion(centroids, terrain, num_points=20, elevation=0.1,
                 """
                 if cost == 'consumption':
                     wind_speed = wind[terrain_atpoint_index][3]
-                    wind_angle = wind[terrain_atpoint_index][3]
+                    wind_angle = wind[terrain_atpoint_index][4]
 
-                    wind_power_consumption, UAV_speed = getPowerInWind(speed, UAV_parameters, wind_speed,
-                                                                        wind_angle, x_difference, y_difference)
-                    
+                    wind_power_consumption, UAV_speed = getPowerInWind(wind_speed, wind_angle, speed, x_difference, y_difference)
                     seconds = distance / UAV_speed
                     watthour = wind_power_consumption  * (seconds / 3600)
-                    milliamphour = watthour / UAV_parameters.battery_voltage * 1000
+                    milliamphour = watthour / drone.battery_voltage * 1000
+                    total_time += seconds
                     total_milliamphour += milliamphour
-                    total_seconds += seconds
 
-            if cost == 'distance': cost_matrix[index1].append(total_distance)
-            if cost == 'consumption': 
-                cost_matrix[index1].append(total_milliamphour)
-                time_matrix[index1].append(total_seconds)
+            if cost == 'distance': movement_matrix[index1].append(total_distance)
+            if cost == 'consumption': movement_matrix[index1].append(total_milliamphour)
+            time_matrix[index1].append(total_time)
             iteration += 1
-    return motion_matrix, np.array(cost_matrix), time_matrix
+    return np.array(movement_matrix), time_matrix
+
+
+# Helper function for Power consumption for UAV to hover at cluster points
+def hoverPowerConsumptionAtCentroid(centroids, wind, terrain, UAV_hover_time):
+    # Function to calculate Euclidean distance
+    def euclidean_distance(point1, point2):
+        return math.sqrt(sum((c1 - c2) ** 2 for c1, c2 in zip(point1, point2)))
+    hover_matrix = []
+
+    for index, centroid in enumerate(centroids):
+        # Skip first centroid, which is center point
+        if index == 0: 
+            hover_matrix.append('center_point')  
+            continue
+
+        # Function to find the closest terrain point
+        closest_point_index = min(range(len(terrain)), key=lambda i: euclidean_distance(terrain[i], centroid))
+        
+        # Gets wind angle and speed at that closest terrain point
+        wind_speed = wind[closest_point_index][3]
+
+        # Not using wind angle, because at hovering state dirrection does not matter as much for power consumption
+        wind_power_consumption, UAV_speed = getPowerInWind(wind_speed, movement='hover')
+        watthour = wind_power_consumption  * (UAV_hover_time[index - 1] / 3600)
+        milliamphour = watthour / drone.battery_voltage * 1000
+        hover_matrix.append(milliamphour)
+    return hover_matrix
+    
 
 # Converts XYZ file each point coordinate values to metered values
 def convertXYZtoMeters(terrain):

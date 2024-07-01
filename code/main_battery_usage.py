@@ -34,3 +34,4 @@ print(f'Charge Consumption: Path {aco_cost} mAh, WPT {WPT_charge_consumption} mA
 print(f'Path sequence: {aco_path}')
 
 plot(centroids=centroids, terrain=terrain, motion=motion, path=aco_path)
+
