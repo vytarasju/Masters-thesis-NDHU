@@ -205,7 +205,7 @@ def getMotion(centroids, terrain, num_points=20, elevation=0.1, cost = 'distance
 
 
 # Helper function for Power consumption for UAV to hover at cluster points
-def hoverPowerConsumptionAtCentroid(centroids, wind, terrain, UAV_hover_time):
+def hoverPowerConsumptionAtCentroid(centroids, terrain, UAV_hover_time, wind = 0, type = 'nowind'):
     # Function to calculate Euclidean distance
     def euclidean_distance(point1, point2):
         return math.sqrt(sum((c1 - c2) ** 2 for c1, c2 in zip(point1, point2)))
@@ -221,11 +221,13 @@ def hoverPowerConsumptionAtCentroid(centroids, wind, terrain, UAV_hover_time):
         closest_point_index = min(range(len(terrain)), key=lambda i: euclidean_distance(terrain[i], centroid))
         
         # Gets wind angle and speed at that closest terrain point
-        wind_speed = wind[closest_point_index][3]
+        if type == 'wind': 
+            wind_speed = wind[closest_point_index][3]
+            # Not using wind angle, because at hovering state dirrection does not matter as much for power consumption
+            power_consumption, UAV_speed = getPowerInWind(wind_speed, movement='hover')
+        elif type == "nowind": power_consumption = drone.getPropulsionPowerConsumtion(0)
 
-        # Not using wind angle, because at hovering state dirrection does not matter as much for power consumption
-        wind_power_consumption, UAV_speed = getPowerInWind(wind_speed, movement='hover')
-        watthour = wind_power_consumption  * (UAV_hover_time[index - 1] / 3600)
+        watthour = power_consumption  * (UAV_hover_time[index - 1] / 3600)
         milliamphour = watthour / drone.battery_voltage * 1000
         hover_matrix.append(milliamphour)
     return hover_matrix

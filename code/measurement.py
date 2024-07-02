@@ -2,26 +2,9 @@ import numpy as np
 import math
 
 class UAV:
-    def __init__(self,terrain = [], height_width = 1, total_cost = 0, motion_cost = np.array([])):
-        # Distance measured in meters
-        self.terrain = []
-        self.terrain_scale = height_width
+    def __init__(self):
         self.air_density = 1.225 #kg/m^3
 
-        # Non-Measured distance variables
-        self.terrain_nm = terrain
-        self.total_cost_nm = total_cost
-        self.motion_cost_nm = motion_cost.tolist()
-
-        self.initUAV()
-
-    # If the init was called before motion and total distance results
-    def initDistance(self, total_cost = 0, motion_cost = []):
-        self.total_cost_nm = total_cost
-        self.motion_cost_nm = motion_cost.tolist()
-    
-    # Main UAV parameters
-    def initUAV(self):
         # Added from other sources (DJI T10)
         self.UAV_max_speed = 30 #m/s
         self.battery_capacity = 9500 #mAh
@@ -77,72 +60,36 @@ class UAV:
 
     # Function converting total distance and motion distance to:
     # meters (XYZ terrain is already defined in meters), or seconds, or milliamphours
-    def convertDistancetoMeasurements(self, type, speed = 0):
-        is_aco, is_motion = False, False
-        distance_measured = 0
-        motion_measured = []
-
-        if self.total_cost_nm != 0: is_aco = True
-        if len(self.motion_cost_nm) != 0: is_motion = True
+    def convertDistancetoMeasurements(self, path_distance, movement_distance, type):
+        distance_converted = 0
+        motion_converted = []
 
         match type:
-            case 'meters':
-                if is_aco: distance_measured = self.total_cost_nm * self.terrain_scale
-
-                if is_motion: 
-                    for iteration, row in enumerate(self.motion_cost_nm):
-                        motion_measured.append([])
-                        for col in row:
-                            distance_meters = col * self.terrain_scale
-                            motion_measured[iteration].append(distance_meters)
-
             case 'seconds':
-                if speed == 0:
-                    print('ERROR: Specified type requires UAV speed')
-                    return
-                
-                if is_aco: 
-                    distance_meters = self.total_cost_nm * self.terrain_scale
-                    distance_measured = distance_meters / speed
+                distance_converted = path_distance / self.UAV_max_speed
 
-                if is_motion: 
-                    for iteration, row in enumerate(self.motion_cost_nm):
-                        motion_measured.append([])
-                        for col in row:
-                            distance_meters = col * self.terrain_scale
-                            distance_seconds = distance_meters / speed
-                            motion_measured[iteration].append(distance_seconds)
+                for index, row in enumerate(movement_distance):
+                    for distance in row:
+                        distance_seconds = distance / self.UAV_max_speed
+                        motion_converted[index].append(distance_seconds)
 
             case 'milliamphours':
-                if speed == 0:
-                    print('ERROR: Specified type requires UAV speed')
-                    return
-                
-                power_consumtion_moving = self.getPropulsionPowerConsumtion(speed)
-                if is_aco: 
-                    distance_meters = self.total_cost_nm * self.terrain_scale
-                    distance_seconds = distance_meters / speed
-                    distance_watthour = power_consumtion_moving  * (distance_seconds / 3600)
-                    distance_measured = distance_watthour / self.battery_voltage * 1000
+                power_consumtion_moving = self.getPropulsionPowerConsumtion(self.UAV_max_speed)
+                distance_seconds = path_distance / self.UAV_max_speed
+                distance_watthour = power_consumtion_moving  * (distance_seconds / 3600)
+                distance_converted = distance_watthour / self.battery_voltage * 1000
 
-                if is_motion: 
-                    for iteration, row in enumerate(self.motion_cost_nm):
-                        motion_measured.append([])
-                        for col in row:
-                            distance_meters = col * self.terrain_scale
-                            distance_seconds = distance_meters / speed
-                            distance_watthour = power_consumtion_moving * (distance_seconds / 3600)
-                            distance_charge = distance_watthour / self.battery_voltage * 1000
-                            motion_measured[iteration].append(distance_charge)
+                for iteration, row in enumerate(movement_distance):
+                    motion_converted.append([])
+                    for distance in row:
+                        distance_seconds = distance / self.UAV_max_speed
+                        distance_watthour = power_consumtion_moving * (distance_seconds / 3600)
+                        distance_charge = distance_watthour / self.battery_voltage * 1000
+                        motion_converted[iteration].append(distance_charge)
             case _:
                 print('ERROR: Speficied type not defined')
-        
-        if is_aco and is_motion: return distance_measured, motion_measured
-        elif not is_aco and is_motion: return motion_measured
-        elif is_aco and not is_motion: return distance_measured
-        else:
-            print("ERROR: Neither total_cost, nor motion_cost were provided initially")
-            return 0
+                return 0
+        return distance_converted, motion_converted
 
 class WPT:
     def __init__(self):
@@ -165,9 +112,6 @@ class WPT:
 
         self.charging_efficiency_constants = ((self.gain_transmitter * self.gain_receiver * self.rectifier_efficiency) / self.polarization_loss) \
                                              * ((self.wavelength / (4 * math.pi))**self.pathloss_coefficient)
-
-        """References are providing only the result of constants"""
-        # self.charging_efficiency_constants = 0.000432
     
     # Gives how much time will WPT need to charge particular sensor
     # Takes in distance between sensor and WPT and how much to charge (mAh)

@@ -16,10 +16,8 @@ Change working directory to a place where to save test results
 
 working_directory_path = '/home/vytska/thesis/code/csv/'
 terrain_name = 'output_NASADEM_old.xyz'
-wind_velocity_name = "output_NASADEM_20_3_30m_vel.asc"
-wind_angle_name = "output_NASADEM_20_3_30m_ang.asc"
 
-working_directory_path += terrain_name.split('.')[0] + '/'
+working_directory_path += terrain_name.split('.')[0] + '_distance' + '/'
 
 # Remove the directory if it exists to reset results for retests
 if os.path.exists(working_directory_path):
@@ -56,12 +54,8 @@ starting_points_limit = 20
 """BEGIN Terrain, Wind and Devices Definition"""
 terrain = readTerrainXYZ(terrain_name)
 terrain = convertXYZtoMeters(terrain)
-wind = readWindASCWindninja(terrain, wind_velocity_name, wind_angle_name)
 
-# Flatten wind list, to match CSV layout used in other parts of the project
-wind = [list(list_item[0]) + list_item[1:] for list_item in wind]
-
-drone = UAV(terrain=terrain)
+drone = UAV()
 iot = IoTDevice()
 wpt = WPT()
 """END Terrain, Wind and Devices Definition"""
@@ -72,11 +66,6 @@ with open(working_directory_path + 'terrain_data.csv', mode='w', newline='') as 
         writer.writerow(['terrain_x', 'terrain_y', 'terrain_z'])  # Write header
         for point in terrain:
                 writer.writerow([point[0], point[1], point[2]])
-with open(working_directory_path + 'wind_data.csv', mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['terrain_x', 'terrain_y', 'terrain_z', 'wind_velocity', 'wind_angle'])  # Write header
-        for point in wind:
-                writer.writerow([point[0], point[1], point[2], point[3], point[4]])
 
 # Helper function for writing and printing iteration end
 def write_print(text):
@@ -152,12 +141,15 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
                 else: break
 
             # Find all possilbe paths the UAV can take and get power consumption needed at eaceh hovering point
-            movement_matrix, time_matrix, motion_matrix = getMotion(centroids, terrain, UAV_steps, UAV_elevation, 'consumption', wind)
-            hover_matrix = hoverPowerConsumptionAtCentroid(centroids, wind, terrain, cluster_charge_time)
+            movement_matrix, time_matrix, motion_matrix = getMotion(centroids, terrain, num_points=UAV_steps, elevation=UAV_elevation)
+            hover_matrix = hoverPowerConsumptionAtCentroid(centroids, terrain, cluster_charge_time)
 
             # Find path solution for UAV
             ant_colony = AntColony(movement_matrix, num_ants=80, num_iterations=50, evaporation_rate=0.5, alpha=1, beta=1)
             aco_path, aco_cost = ant_colony.find_shortest_path()
+            
+            # Convert distance to charge consumption
+            aco_cost, motion_matrix = drone.convertDistancetoMeasurements(aco_cost, movement_matrix, type='milliamphours')
 
             # Find WPT and hovering charge consumption
             total_cluster_charge_time = uav_hover_time = sum(cluster_charge_time)

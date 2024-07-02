@@ -14,21 +14,19 @@ UAV_elevation = 39 #meters
 UAV_steps = 20 #steps between points
 """END Parameter Defintion"""
 
-drone = UAV(terrain=terrain)
+drone = UAV()
 
 movement_matrix, time_matrix, motion_matrix = getMotion(centroids, terrain, num_points=UAV_steps, elevation=UAV_elevation)
 
-ant_colony = AntColony(movement_matrix, num_ants=80, num_iterations=50, 
-                       evaporation_rate=0.5, alpha=1, beta=1)
+ant_colony = AntColony(movement_matrix, num_ants=80, num_iterations=50, evaporation_rate=0.5, alpha=1, beta=1)
+
 aco_path, aco_distance = ant_colony.find_shortest_path()
 
-measurements = UAV(terrain=terrain, total_cost=aco_distance, motion_cost=movement_matrix)
-
-distance_measured, motion_measured = measurements.convertDistancetoMeasurements(type='milliamphours', speed=drone.UAV_max_speed)
+distance_converted, motion_converted = drone.convertDistancetoMeasurements(aco_distance, movement_matrix, type='milliamphours')
 
 print(f'This is taking just distance as cost measurement for AC')
 
-print(f'Total milliamphour consumtion: {distance_measured}')
+print(f'Total milliamphour consumtion: {distance_converted}')
 
 print(f'Path sequence: {aco_path}')
 
