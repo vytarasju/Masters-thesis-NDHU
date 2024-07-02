@@ -18,7 +18,14 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
     cluster_hover_time = []
     center_point = getCenterPoint(terrain)
     sensor_num = len(sensors)
+    Check_K_ceiling = False
+    # Check if K_value provided, if not then start K from 1
     if K_value == 'NA': K_value = 1
+
+    # If K_value provided, start checking for Check_K_ceiling
+    else: 
+        Check_K_ceiling = True
+        limit_counter = 0
 
     # Iterate until can't increase K_value or solution is found
     while K_value <= sensor_num:
@@ -71,6 +78,11 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
         # If Charging time is equals to or exceedes UAV operation time, this k is not the solution
         # print(f'k: {K_value}, total_charge: {total_charge_time / 60} min')
         if total_charge_time >= drone.minimum_operation_time:
+            if Check_K_ceiling == True: 
+                limit_counter += 1
+                if limit_counter >= 3: 
+                    print('ITERATION END: K Value Ceiling reached')
+                    return 0
             K_value += 1
             continue
         else:
@@ -78,7 +90,7 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
             return centroids, wpt_area, cluster_hover_time, K_value
         
     # If solution was not found, no solution exists
-    print('ITERATION END: No K Value has been found in clusterXMeansChargeTime()')
+    print('ITERATION END: K Value reached sensor_num value')
     return 0
 
 #using euclidean distance between 2 points
