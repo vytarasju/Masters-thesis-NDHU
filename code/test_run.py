@@ -95,7 +95,7 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
     # To get best K_value at different distribution levels
     while density <= density_limit:
         starting_points = starting_points_init
-        best_time, best_consumption, best_path, best_clusters = [0, float('inf')], [0, float('inf')], [], []
+        best_time, best_consumption, best_path, best_clusters, best_motion = [0, float('inf')], [0, float('inf')], [], [], []
         sensors = generateSensorsDensity(terrain, sensors_num, density, starting_points, terrain_resolution)
 
         # Finding best K_value
@@ -126,6 +126,10 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
                         writer.writerow(['centroid_x', 'centroid_y', 'centroid_z'])  # Write header
                         for centroid in best_clusters:
                                 writer.writerow([centroid[0], centroid[1], centroid[2]])
+                    with open(solution_working_directory_path + 'motion.csv', mode='w') as solution_file:
+                        writer = csv.writer(solution_file)
+                        for motion in best_motion:
+                                writer.writerow(motion)
                     with open(solution_working_directory_path + 'path.txt', mode='w') as solution_file:
                         solution_file.write(f'{best_path}')
                     with open(solution_working_directory_path + 'solution_results.txt', mode='w') as solution_file:
@@ -138,7 +142,7 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
                 
                 # Reset variables
                 K_value = 1
-                best_time, best_consumption, best_path, best_clusters = [0, float('inf')], [0, float('inf')], [], []
+                best_time, best_consumption, best_path, best_clusters, best_motion = [0, float('inf')], [0, float('inf')], [], [], []
                 # If starting_points still can be increased, then increase it, if not then increase density and reset starting_points
                 if starting_points <= starting_points_limit: 
                     starting_points += starting_points_increment
@@ -148,7 +152,7 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
                 else: break
 
             # Find all possilbe paths the UAV can take and get power consumption needed at eaceh hovering point
-            movement_matrix, time_matrix = getMotion(centroids, terrain, UAV_steps, UAV_elevation, 'consumption', wind)
+            movement_matrix, time_matrix, motion_matrix = getMotion(centroids, terrain, UAV_steps, UAV_elevation, 'consumption', wind)
             hover_matrix = hoverPowerConsumptionAtCentroid(centroids, wind, terrain, cluster_charge_time)
 
             # Find path solution for UAV
@@ -191,6 +195,7 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
                     best_consumption[0] = K_value
                     best_path = path_solution
                     best_clusters = centroids
+                    best_motion = motion_matrix
             K_value += 1
         # starting_points_limit reached, expand on density and try again
         density += density_increment

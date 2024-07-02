@@ -151,7 +151,7 @@ def getMotion(centroids, terrain, num_points=20, elevation=0.1, cost = 'distance
                 # Get z value from terrain
                 terrain_atpoint_index = np.argmin((terrain[:, 0] - x)**2 + (terrain[:, 1] - y)**2)
                 z = terrain[terrain_atpoint_index][2] + elevation
-                motion_matrix[iteration][0].append((x, y, z))
+                motion_matrix[iteration][0].append([x, y, z])
 
                 # Get distance between each segment
                 if i == 0: continue
@@ -161,7 +161,7 @@ def getMotion(centroids, terrain, num_points=20, elevation=0.1, cost = 'distance
                 distance = math.sqrt(x_difference**2 + y_difference**2 + z_difference**2)
                 
                 if cost == 'distance':
-                    total_time +=  distance / UAV_speed
+                    total_time +=  distance / speed
                     total_distance += distance
 
                 """
@@ -189,7 +189,7 @@ def getMotion(centroids, terrain, num_points=20, elevation=0.1, cost = 'distance
             if cost == 'consumption': movement_matrix[index1].append(total_milliamphour)
             time_matrix[index1].append(total_time)
             iteration += 1
-    return np.array(movement_matrix), time_matrix
+    return np.array(movement_matrix), time_matrix, motion_matrix
 
 
 # Helper function for Power consumption for UAV to hover at cluster points
