@@ -73,13 +73,12 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
         if total_charge_time >= drone.minimum_operation_time:
             K_value += 1
             continue
-        else: 
-            print(f'Found solution at K value: {K_value}')
+        else:
             centroids = np.vstack((center_point, kmeans.cluster_centers_))
             return centroids, wpt_area, cluster_hover_time, K_value
         
     # If solution was not found, no solution exists
-    print('CRITICAL ERROR: No K Value has been found in clusterXMeansChargeTime()')
+    print('ITERATION END: No K Value has been found in clusterXMeansChargeTime()')
     return 0
 
 #using euclidean distance between 2 points

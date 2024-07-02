@@ -1,0 +1,31 @@
+charge all 500 sensors up to 2.11 mAh, to operate for 21.73 min
+
+
+K_value at 41 limit reached
+Density 0.5 and starting_points 1
+BEST TOTAL SOLUTION WAS FOUND
+K1 consumption: 497.64 mAh
+K1 time: 1.11 min
+
+
+K_value at 41 limit reached
+Density 0.5 and starting_points 2
+BEST TOTAL SOLUTION WAS FOUND
+K2 consumption: 940.48 mAh
+K2 time: 2.51 min
+
+
+K_value at 41 limit reached
+Density 0.5 and starting_points 3
+BEST TOTAL SOLUTION WAS FOUND
+K4 consumption: 1320.14 mAh
+K4 time: 3.52 min
+
+
+K_value at 41 limit reached
+Density 0.5 and starting_points 4
+BEST TOTAL SOLUTION WAS FOUND
+K7 consumption: 2191.34 mAh
+K7 time: 5.55 min
+
+
