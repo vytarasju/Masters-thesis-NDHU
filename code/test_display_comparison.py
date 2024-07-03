@@ -6,7 +6,7 @@ from plot import *
 """BEGIN Directory Initialisation"""
 csv_path = '/home/vytska/thesis/code/csv/'
 test_directory = 'output_NASADEM_old_combined'
-test_case = 'D4.5SP3'
+test_case = 'D3.5SP3'
 
 working_directory_path = csv_path + test_directory + '/'
 readCSV_path = working_directory_path.replace(csv_path, '')
@@ -53,7 +53,7 @@ def readMotion(directory_path):
         reader = csv.reader(file)
         current_motion = []
         motion_to, motion_from = 0,0
-        for index, line in enumerate(reader):
+        for line in reader:
             # Convert motion saved as a string to a correct format
             current_motion = line[0].split(', ')
             trans_table = str.maketrans('', '', '[]()')
@@ -71,7 +71,6 @@ def readMotion(directory_path):
                     point = []
             current_motion = points
             # Convert from and to cluster points to integers
-            print(line)
             motion_to = int(line[1])
             motion_from = int(line[2])
 
@@ -82,12 +81,24 @@ motion_wind = readMotion(working_directory_path_wind)
 motion_nowind = readMotion(working_directory_path_nowind)
 """END Data Read"""
 
-fig = plt.figure(figsize=(12, 6))
+"""BEGIN Visualisation Functions"""
+def plotBoth():
+    fig = plt.figure(figsize=(12, 6))
 
-ax1 = fig.add_subplot(121, projection='3d')
-plot(terrain, centroids_wind, sensors_wind, motion_wind, path_wind, subplot_idx=121)
+    ax1 = fig.add_subplot(121, projection='3d')
+    plot(terrain, centroids_wind, sensors_wind, motion_wind, path_wind, subplot_ax=ax1, ax_title='UAV Path Planning with Wind Simulation')
 
-ax2 = fig.add_subplot(122, projection='3d')
-plot(terrain, centroids_nowind, sensors_nowind, motion_nowind, path_nowind, subplot_idx=122)
+    ax2 = fig.add_subplot(122, projection='3d')
+    plot(terrain, centroids_nowind, sensors_nowind, motion_nowind, path_nowind, subplot_ax=ax2, ax_title='UAV Path Planning without Wind Simulation')
 
-plt.show()
+    plt.show()
+
+def compareNowindActualConsumption():
+    last_point, current_point = 0, 0
+    for index, destination in enumerate(path_nowind):
+        if index == 0: 
+            last_point = destination
+            continue
+        current_path = list(filter(lambda x: (x[1] == destination and x[2] == last_point), motion_wind))
+compareNowindActualConsumption()
+"""END Visualisation Functions"""

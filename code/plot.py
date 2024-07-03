@@ -2,13 +2,14 @@ import matplotlib.pyplot as plt
 import numpy as np 
 
 def plot(terrain = np.empty((0,)), centroids = np.empty((0,)),
-          sensors = np.empty((0,)), motion = {}, path = {}, wpt_area = {}, subplot_idx = 'NA'):
+          sensors = np.empty((0,)), motion = {}, path = {}, wpt_area = {}, subplot_ax = 'NA', ax_title = 'NA'):
     # Create 3D plot
-    fig = plt.figure()
-    subplot_id = 111
-    if subplot_idx != 'NA': subplot_id = subplot_idx
-    ax = fig.add_subplot(subplot_id, projection='3d')
     
+    if subplot_ax == 'NA':
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+    else: ax = subplot_ax
+        
     def plotCone(radius, center, height, density):
         # Generate data for cone
         u = np.linspace(0, 2 * np.pi, 8)
@@ -73,8 +74,9 @@ def plot(terrain = np.empty((0,)), centroids = np.empty((0,)),
     ax.set_xlabel('X Axis')
     ax.set_ylabel('Y Axis')
     # ax.set_zlabel('Z Label')
-    ax.set_title('UAV IOT Recharging Path Planning')
 
-    if subplot_idx == 'NA': plt.show()
-    else: 
-        return fig, ax
+    if subplot_ax == 'NA': 
+        ax.set_title('UAV IOT Recharging Path Planning')
+        plt.show()
+    else:
+        ax.set_title(ax_title)

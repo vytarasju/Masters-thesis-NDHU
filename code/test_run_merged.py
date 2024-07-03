@@ -90,6 +90,8 @@ def write_print(text):
     file.write(text + '\n')
     print(text)
 
+
+
 # Write and Print all of the log text to have backup for later and to keep track on live iteration progression
 with open(working_directory_path + 'test_results.txt', mode='w') as file:
     K_value = 1
@@ -103,8 +105,8 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
     while density <= density_limit:
         starting_points = starting_points_init
 
-        best_time_wind, best_consumption_wind, best_path_wind, best_clusters_wind, best_motion_wind = [0, float('inf')], [0, float('inf')], [], [], []
-        best_time_nowind, best_consumption_nowind, best_path_nowind, best_clusters_nowind, best_motion_nowind = [0, float('inf')], [0, float('inf')], [], [], []
+        best_time_wind, best_consumption_wind, best_path_wind, best_clusters_wind, best_motion_wind, best_movement_wind = [0, float('inf')], [0, float('inf')], [], [], [], []
+        best_time_nowind, best_consumption_nowind, best_path_nowind, best_clusters_nowind, best_motion_nowind, best_movement_nowind = [0, float('inf')], [0, float('inf')], [], [], [], []
 
         sensors = generateSensorsDensity(terrain, sensors_num, density, starting_points, terrain_resolution)
 
@@ -114,15 +116,13 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
             # If starting_points reached limit, increase density and start at the begining with starting_points
             try: centroids, wpt_area, cluster_charge_time, K_value = clusterXMeansChargeTime(terrain, sensors, angle_WPT, min_hover_WPT, provide_charge, K_value)
             except:
-                def saveResults(best_consumption, best_time, best_path, best_motion, best_clusters, dir_path):
+                write_print(f'D{density}SP{starting_points}: At {K_value}K limit reached')
+                def saveResults(best_consumption, best_time, best_path, best_motion, best_clusters, best_movement, dir_path):
                     # K_value max reached, output best solution, if it was found
-                    write_print(f'K_value at {K_value} limit reached')
-                    write_print(f'Density {density} and starting_points {starting_points}')
                     if best_time[1] !=  float('inf') and best_consumption !=  float('inf'):
                         write_print(f'BEST TOTAL SOLUTION WAS FOUND')
                         write_print(f'K{best_consumption[0]} consumption: {best_consumption[1]:.2f} mAh')
                         write_print(f'K{best_time[0]} time: {(best_time[1]/60):.2f} min')
-                        write_print(f'\n')
                         
                         # Save sensors, clusters results for best solutions at the specified density and starting_points
                         solution_working_directory_path = dir_path + f'D{density}SP{starting_points}/'
@@ -147,18 +147,24 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
                             solution_file.write(f'Charge all {sensors_num} sensors up to {provide_charge:.2f} mAh, to operate for {(drone.minimum_operation_time/60):.2f} min\n')
                             solution_file.write(f'Total UAV charge consumption: {best_consumption[1]:.2f} mAh\n')
                             solution_file.write(f'Total UAV time taken: {(best_time[1]/60):.2f} min\n')
+                        with open(solution_working_directory_path + 'movement.csv', mode='w') as solution_file:
+                            writer = csv.writer(solution_file)
+                            for line in best_movement:
+                                    writer.writerow(line)
                     else:
                         write_print(f'NO TOTAL SOLUTION WAS FOUND')
-                        write_print(f'\n')
                 
                 #Save wind and nowind results
-                saveResults(best_consumption_wind, best_time_wind, best_path_wind, best_motion_wind, best_clusters_wind, working_directory_path_wind)
-                saveResults(best_consumption_nowind, best_time_nowind, best_path_nowind, best_motion_nowind, best_clusters_nowind, working_directory_path_nowind)
+                write_print(f'WIND results')
+                saveResults(best_consumption_wind, best_time_wind, best_path_wind, best_motion_wind, best_clusters_wind, best_movement_wind, working_directory_path_wind)
+                write_print(f'NOWIND results')
+                saveResults(best_consumption_nowind, best_time_nowind, best_path_nowind, best_motion_nowind, best_clusters_nowind, best_movement_nowind, working_directory_path_nowind)
+                write_print(f'\n')
 
                 # Reset variables
                 K_value = 1
-                best_time_wind, best_consumption_wind, best_path_wind, best_clusters_wind, best_motion_wind = [0, float('inf')], [0, float('inf')], [], [], []
-                best_time_nowind, best_consumption_nowind, best_path_nowind, best_clusters_nowind, best_motion_nowind = [0, float('inf')], [0, float('inf')], [], [], []
+                best_time_wind, best_consumption_wind, best_path_wind, best_clusters_wind, best_motion_wind, best_movement_wind = [0, float('inf')], [0, float('inf')], [], [], [], []
+                best_time_nowind, best_consumption_nowind, best_path_nowind, best_clusters_nowind, best_motion_nowind, best_movement_nowind = [0, float('inf')], [0, float('inf')], [], [], [], []
                 # If starting_points still can be increased, then increase it, if not then increase density and reset starting_points
                 if starting_points <= starting_points_limit: 
                     starting_points += starting_points_increment
@@ -213,6 +219,7 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
                     best_clusters_wind = centroids
                     best_path_wind = path_solution
                     best_motion_wind = motion_matrix
+                    best_movement_wind = movement_matrix
             """END wind calculation"""
 
             """BEGIN nowind calculation"""
@@ -264,6 +271,7 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
                     best_path_nowind = path_solution
                     best_clusters_nowind = centroids
                     best_motion_nowind = motion_matrix
+                    best_movement_nowind = movement_matrix
             """END nowind calculation"""
             K_value += 1
         # starting_points_limit reached, expand on density and try again
