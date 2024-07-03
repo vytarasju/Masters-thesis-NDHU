@@ -9,7 +9,6 @@ terrain = readTerrainXYZ('output_NASADEM_old.xyz')
 terrain = convertXYZtoMeters(terrain)
 wind = readWindASCWindninja(terrain, "output_NASADEM_20_3_30m_vel.asc", "output_NASADEM_20_3_30m_ang.asc")
 
-
 """BEGIN Motion and WPT Parameter Defintion"""
 # For X-Means
 min_hover_WPT = 2 #meters
