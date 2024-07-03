@@ -2,8 +2,6 @@
 
 Main repository for my Master's thesis, including code and drafts for paper.
 
-Overleaf: https://www.overleaf.com/read/kfgtqrrjvggd#6d6fa1
-
 Topic: UAV Enabled Wireless Power Transfer 3D Path Planning for Survivability in Wireless Sensor Network Application
 
 Advising Professor: Wei-Che Chien
