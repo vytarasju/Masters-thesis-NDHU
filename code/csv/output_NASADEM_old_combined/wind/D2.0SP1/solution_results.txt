@@ -1,0 +1,3 @@
+Charge all 500 sensors up to 2.11 mAh, to operate for 21.73 min
+Total UAV charge consumption: 803.19 mAh
+Total UAV time taken: 1.84 min

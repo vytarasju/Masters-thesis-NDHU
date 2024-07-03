@@ -1,12 +1,13 @@
 import matplotlib.pyplot as plt
-import numpy as np
-from cluster_path import getCenterPoint
+import numpy as np 
 
 def plot(terrain = np.empty((0,)), centroids = np.empty((0,)),
-          sensors = np.empty((0,)), motion = {}, path = {}, wpt_area = {}):
+          sensors = np.empty((0,)), motion = {}, path = {}, wpt_area = {}, subplot_idx = 'NA'):
     # Create 3D plot
     fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+    subplot_id = 111
+    if subplot_idx != 'NA': subplot_id = subplot_idx
+    ax = fig.add_subplot(subplot_id, projection='3d')
     
     def plotCone(radius, center, height, density):
         # Generate data for cone
@@ -74,4 +75,6 @@ def plot(terrain = np.empty((0,)), centroids = np.empty((0,)),
     # ax.set_zlabel('Z Label')
     ax.set_title('UAV IOT Recharging Path Planning')
 
-    plt.show()
+    if subplot_idx == 'NA': plt.show()
+    else: 
+        return fig, ax

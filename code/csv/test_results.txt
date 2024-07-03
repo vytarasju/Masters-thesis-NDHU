@@ -1,3 +1,0 @@
-charge all 500 sensors up to 2.11 mAh, to operate for 21.73 min
-
-

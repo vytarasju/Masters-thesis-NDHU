@@ -225,7 +225,7 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
             aco_path, aco_cost = ant_colony.find_shortest_path()
             
             # Convert distance to charge consumption
-            aco_cost, motion_matrix = drone.convertDistancetoMeasurements(aco_cost, movement_matrix, type='milliamphours')
+            aco_cost, movement_matrix = drone.convertDistancetoMeasurements(aco_cost, movement_matrix, type='milliamphours')
 
             # Find WPT and hovering charge consumption
             total_cluster_charge_time = uav_hover_time = sum(cluster_charge_time)

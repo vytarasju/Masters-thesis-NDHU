@@ -1,0 +1,173 @@
+charge all 500 sensors up to 2.11 mAh, to operate for 21.73 min
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 1
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 2
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 3
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 4
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 5
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 6
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 7
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 8
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 9
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 10
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 11
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 12
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 13
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 14
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 15
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 16
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 17
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 18
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 19
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 20
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 7.5 and starting_points 21
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 8.5 and starting_points 1
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 8.5 and starting_points 2
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 8.5 and starting_points 3
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 8.5 and starting_points 4
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 8.5 and starting_points 5
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 8.5 and starting_points 6
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 8.5 and starting_points 7
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 8.5 and starting_points 8
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 8.5 and starting_points 9
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 8.5 and starting_points 10
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 8.5 and starting_points 11
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 8.5 and starting_points 12
+NO TOTAL SOLUTION WAS FOUND
+
+
+K_value at 1 limit reached
+Density 8.5 and starting_points 13
+NO TOTAL SOLUTION WAS FOUND
+
+
