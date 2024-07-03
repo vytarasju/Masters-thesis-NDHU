@@ -1,9 +1,16 @@
 import numpy as np
 import csv
 import os
+import shutil
 
 path_csv = "/home/vytska/thesis/code/csv"
 path_windninja = "/home/vytska/thesis/code/windninja/"
+
+# Check if CSV path exists, if not, create that dir
+# Used for writing data
+if not os.path.exists(path_csv):
+    os.makedirs(path_csv, exist_ok=True)
+
 os.chdir(path_csv)
 
 #reading terrain data

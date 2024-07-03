@@ -49,3 +49,6 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+# CSV folder, filled with test run data
+code/csv/
