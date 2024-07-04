@@ -18,11 +18,13 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
     cluster_hover_time = []
     center_point = getCenterPoint(terrain)
     sensor_num = len(sensors)
-    Check_K_ceiling = False
+    Check_K_ceiling, Check_K_floor = False, False
     limit_counter = 0
 
-    # Check if K_value provided, if not then start K from 1
-    if K_value == 'NA': K_value = 1
+    # Check if K_value provided, if not then start K from 1 and Check_K_floor
+    if K_value == 'NA': 
+        K_value = 1
+        Check_K_floor = True
     # If K_value provided, start checking for Check_K_ceiling
     elif K_value > 1: Check_K_ceiling = True
 
@@ -79,10 +81,14 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
         if total_charge_time >= drone.minimum_operation_time:
             print(f'Clustering failed: charge time {(total_charge_time/60):.2f} min at {K_value}K')
             if Check_K_ceiling == True: 
-                print(f'Checking ceiling, {limit_counter}')
                 limit_counter += 1
                 if limit_counter >= 3: 
                     print('ITERATION END: K Value Ceiling reached')
+                    return 0
+            elif Check_K_floor == True:
+                limit_counter += 1
+                if limit_counter >= 10:
+                    print('ITERATION END: K Value Floor reached')
                     return 0
             K_value += 1
             continue
