@@ -19,14 +19,15 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
     center_point = getCenterPoint(terrain)
     sensor_num = len(sensors)
     Check_K_ceiling, Check_K_floor = False, False
+    smallest_charge_time = float('inf')
     limit_counter = 0
-
+    
+    # If K_value provided, start checking for Check_K_ceiling
+    if K_value > 1: Check_K_ceiling = True
     # Check if K_value provided, if not then start K from 1 and Check_K_floor
-    if K_value == 'NA': 
+    elif K_value == 'NA' or K_value == 1: 
         K_value = 1
         Check_K_floor = True
-    # If K_value provided, start checking for Check_K_ceiling
-    elif K_value > 1: Check_K_ceiling = True
 
     # Iterate until can't increase K_value or solution is found
     while K_value <= sensor_num:
@@ -82,12 +83,18 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
             print(f'Clustering failed: charge time {(total_charge_time/60):.2f} min at {K_value}K')
             if Check_K_ceiling == True: 
                 limit_counter += 1
+                print(f'K Ceiling {limit_counter}')
                 if limit_counter >= 3: 
                     print('ITERATION END: K Value Ceiling reached')
                     return 0
             elif Check_K_floor == True:
-                limit_counter += 1
-                if limit_counter >= 10:
+                # If charge time is constantly increasing, then K_floor has been reached
+                if total_charge_time > smallest_charge_time: limit_counter += 1
+                else: 
+                    smallest_charge_time = total_charge_time
+                    limit_counter = 0
+                print(f'K Floor {limit_counter}: {(total_charge_time/60):.2f}, {(smallest_charge_time/60):.2f}')
+                if limit_counter >= 20:
                     print('ITERATION END: K Value Floor reached')
                     return 0
             K_value += 1
@@ -102,7 +109,7 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
 
 #using euclidean distance between 2 points
 #returning matrix of distance between each centroid points
-def getDistanceCentroids(centroids):
+def getDistanceCentroids(centroids):#
     num_centroids = centroids.shape[0]
     distance_matrix = np.zeros((num_centroids, num_centroids))
     for i in range(num_centroids):
