@@ -83,6 +83,29 @@ def write_print(text):
     file.write(text + '\n')
     print(text)
 
+def dictionaryValueReset(best_variables):
+    return {
+         "k": best_variables["k"],
+        "time": best_variables["time"],
+        "consumption": best_variables["consumption"].copy(),
+        "path": best_variables["path"].copy(),
+        "clusters": best_variables["clusters"].copy(),
+        "motion": best_variables["motion"].copy(),
+        "movement": best_variables["movement"].copy(),
+    }
+
+# Best performing variables
+best_variables = {
+    "k": 0,
+    "time": float('inf'),
+    "consumption": [float('inf'), float('inf'), float('inf')],
+    "path": [],
+    "clusters": [],
+    "motion": [],
+    "movement": []
+}
+best_wind = best_variables.copy()
+
 # Write and Print all of the log text to have backup for later and to keep track on live iteration progression
 with open(working_directory_path + 'test_results.txt', mode='w') as file:
     K_value = 1
@@ -95,54 +118,64 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
     # To get best K_value at different distribution levels
     while density <= density_limit:
         starting_points = starting_points_init
-        best_time, best_consumption, best_path, best_clusters, best_motion = [0, float('inf')], [0, float('inf')], [], [], []
+        best_wind = dictionaryValueReset(best_variables)
         sensors = generateSensorsDensity(terrain, sensors_num, density, starting_points, terrain_resolution)
 
         # Finding best K_value
         while K_value < sensors_num:
             # Try clustering, if it fails - K_Value max reached, increase starting_points
             # If starting_points reached limit, increase density and start at the begining with starting_points
-            try: centroids, wpt_area, cluster_charge_time, K_value = clusterXMeansChargeTime(terrain, sensors, angle_WPT, min_hover_WPT, provide_charge, K_value)
+            try: clusters, wpt_area, cluster_charge_time, K_value = clusterXMeansChargeTime(terrain, sensors, angle_WPT, min_hover_WPT, provide_charge, K_value)
             except:
                 # K_value max reached, output best solution, if it was found
-                write_print(f'K_value at {K_value} limit reached')
-                write_print(f'Density {density} and starting_points {starting_points}')
-                if best_time[1] !=  float('inf') and best_consumption !=  float('inf'):
-                    write_print(f'BEST TOTAL SOLUTION WAS FOUND')
-                    write_print(f'K{best_consumption[0]} consumption: {best_consumption[1]:.2f} mAh')
-                    write_print(f'K{best_time[0]} time: {(best_time[1]/60):.2f} min')
-                    write_print(f'\n')
-                    
-                    # Save sensors, clusters results for best solutions at the specified density and starting_points
-                    solution_working_directory_path = working_directory_path + f'D{density}SP{starting_points}/'
-                    os.makedirs(solution_working_directory_path, exist_ok=True)
-                    with open(solution_working_directory_path + 'sensors.csv', mode='w') as solution_file:
-                        writer = csv.writer(solution_file)
-                        writer.writerow(['sensor_x', 'sensor_y', 'sensor_z'])  # Write header
-                        for sensor in sensors:
-                            writer.writerow([sensor[0], sensor[1], sensor[2]])
-                    with open(solution_working_directory_path + 'clusters.csv', mode='w') as solution_file:
-                        writer = csv.writer(solution_file)
-                        writer.writerow(['centroid_x', 'centroid_y', 'centroid_z'])  # Write header
-                        for centroid in best_clusters:
-                                writer.writerow([centroid[0], centroid[1], centroid[2]])
-                    with open(solution_working_directory_path + 'motion.csv', mode='w') as solution_file:
-                        writer = csv.writer(solution_file)
-                        for motion in best_motion:
-                                writer.writerow(motion)
-                    with open(solution_working_directory_path + 'path.txt', mode='w') as solution_file:
-                        solution_file.write(f'{best_path}')
-                    with open(solution_working_directory_path + 'solution_results.txt', mode='w') as solution_file:
-                        solution_file.write(f'Charge all {sensors_num} sensors up to {provide_charge:.2f} mAh, to operate for {(drone.minimum_operation_time/60):.2f} min\n')
-                        solution_file.write(f'Total UAV charge consumption: {best_consumption[1]:.2f} mAh\n')
-                        solution_file.write(f'Total UAV time taken: {(best_time[1]/60):.2f} min\n')
-                else:
-                    write_print(f'NO TOTAL SOLUTION WAS FOUND')
-                    write_print(f'\n')
+                write_print(f'D{density}SP{starting_points}: At {K_value}K limit reached')
+
+                # Helper Function: Saves results in specific test run directory
+                def saveResults(dictionary, dir_path):
+                    # K_value max reached, output best solution, if it was found
+                    print(dictionary["time"], dictionary["consumption"][0])
+                    if dictionary["time"] !=  float('inf') and dictionary["consumption"][0] !=  float('inf'):
+                        write_print(f'BEST TOTAL SOLUTION WAS FOUND')
+                        write_print(f'consumption: {dictionary["consumption"][0]:.2f} mAh')
+                        write_print(f'K{dictionary["k"]} time: {(dictionary["time"]/60):.2f} min')
+                        
+                        # Save sensors, clusters results for best solutions at the specified density and starting_points
+                        solution_working_directory_path = dir_path + f'D{density}SP{starting_points}/'
+                        os.makedirs(solution_working_directory_path, exist_ok=True)
+                        with open(solution_working_directory_path + 'sensors.csv', mode='w') as solution_file:
+                            writer = csv.writer(solution_file)
+                            writer.writerow(['sensor_x', 'sensor_y', 'sensor_z'])  # Write header
+                            for sensor in sensors:
+                                writer.writerow([sensor[0], sensor[1], sensor[2]])
+                        with open(solution_working_directory_path + 'clusters.csv', mode='w') as solution_file:
+                            writer = csv.writer(solution_file)
+                            writer.writerow(['cluster_x', 'cluster_y', 'cluster_z'])  # Write header
+                            for cluster in dictionary["clusters"]:
+                                    writer.writerow([cluster[0], cluster[1], cluster[2]])
+                        with open(solution_working_directory_path + 'motion.csv', mode='w') as solution_file:
+                            writer = csv.writer(solution_file)
+                            for motion in dictionary["motion"]:
+                                    writer.writerow(motion)
+                        with open(solution_working_directory_path + 'path.txt', mode='w') as solution_file:
+                            solution_file.write(f'{dictionary["path"]}')
+                        with open(solution_working_directory_path + 'solution_results.txt', mode='w') as solution_file:
+                            solution_file.write(f'Charge all {sensors_num} sensors up to {provide_charge:.2f} mAh, to operate for {(drone.minimum_operation_time/60):.2f} min\n')
+                            solution_file.write(f'Total UAV charge consumption: {dictionary["consumption"][0]:.2f} mAh\n')
+                            solution_file.write(f'UAV hover: {dictionary["consumption"][1]:.2f} mAh\n')
+                            solution_file.write(f'UAV flight: {dictionary["consumption"][2]:.2f} mAh\n')
+                            solution_file.write(f'Total UAV time taken: {(dictionary["time"]/60):.2f} min\n')
+                        with open(solution_working_directory_path + 'movement.csv', mode='w') as solution_file:
+                            writer = csv.writer(solution_file)
+                            for line in dictionary["movement"]:
+                                    writer.writerow(line)
+                    else:
+                        write_print(f'NO TOTAL SOLUTION WAS FOUND')
                 
+                saveResults(dictionary=best_wind, dir_path=working_directory_path)
+
                 # Reset variables
                 K_value = 1
-                best_time, best_consumption, best_path, best_clusters, best_motion = [0, float('inf')], [0, float('inf')], [], [], []
+                best_wind = dictionaryValueReset(best_variables)
                 # If starting_points still can be increased, then increase it, if not then increase density and reset starting_points
                 if starting_points <= starting_points_limit: 
                     starting_points += starting_points_increment
@@ -151,51 +184,58 @@ with open(working_directory_path + 'test_results.txt', mode='w') as file:
                     continue
                 else: break
 
-            # Find all possilbe paths the UAV can take and get power consumption needed at eaceh hovering point
-            movement_matrix, time_matrix, motion_matrix = getMotion(centroids, terrain, UAV_steps, UAV_elevation, 'consumption', wind)
-            hover_matrix = hoverPowerConsumptionAtCentroid(centroids, terrain, cluster_charge_time, wind, type = 'wind')
+            #Helper function: runs Wind test
+            def runWindTest(dictionary):
+                # Find all possilbe paths the UAV can take and get power consumption needed at eaceh hovering point
+                movement_matrix, time_matrix, motion_matrix = getMotion(clusters, terrain, UAV_steps, UAV_elevation, 'consumption', wind)
+                hover_matrix = hoverPowerConsumptionAtCentroid(clusters, terrain, cluster_charge_time, wind, type = 'wind')
 
-            # Find path solution for UAV
-            ant_colony = AntColony(movement_matrix, num_ants=80, num_iterations=50, evaporation_rate=0.5, alpha=1, beta=1)
-            aco_path, aco_cost = ant_colony.find_shortest_path()
+                # Find path solution for UAV
+                ant_colony = AntColony(movement_matrix, num_ants=80, num_iterations=50, evaporation_rate=0.5, alpha=1, beta=1)
+                aco_path, aco_cost = ant_colony.find_shortest_path()
+                path_solution = aco_path
+                flight_consumption = aco_cost
 
-            # Find WPT and hovering charge consumption
-            total_cluster_charge_time = uav_hover_time = sum(cluster_charge_time)
-            wpt_charge_consumption = wpt.chargeConsumptionGivenTime(total_cluster_charge_time)
-            hover_charge_consumption = sum(hover_matrix[1:])
+                # Find WPT and hovering charge consumption
+                total_cluster_charge_time = uav_hover_time = sum(cluster_charge_time)
+                wpt_charge_consumption = wpt.chargeConsumptionGivenTime(total_cluster_charge_time)
+                hover_charge_consumption = sum(hover_matrix[1:])
 
-            # Find total UAV flight time
-            uav_flight_time = 0
-            path_solution = aco_path
-            for index, path in enumerate(path_solution):
-                if path == 0: continue
-                time_path = time_matrix[path_solution[index - 1]][path]
-                uav_flight_time += time_path
+                # Find total UAV flight time
+                uav_flight_time = 0
+                for index, path in enumerate(path_solution):
+                    if path == 0: continue
+                    time_path = time_matrix[path_solution[index - 1]][path]
+                    uav_flight_time += time_path
 
-            # Sum up all UAV charge consumption and operation time variables
-            total_uav_charge_consumption = hover_charge_consumption + aco_cost
-            total_uav_operation_time = uav_hover_time + uav_flight_time
+                # Sum up all UAV charge consumption and operation time variables
+                total_uav_charge_consumption = hover_charge_consumption + flight_consumption
+                total_uav_operation_time = uav_hover_time + uav_flight_time
+                
+                # Output current computations
+                print(f'D{density} SP{starting_points} K{K_value}')
+                print(f'UAV: Path {aco_path}')
+                print(f'UAV: 1) Charge {hover_charge_consumption:.2f} mAh 2) Time {(total_uav_operation_time/60):.2f} min')
+                # Check if the current solution fits UAV operation time and charge amount requirements
+                if total_uav_operation_time > drone.minimum_operation_time:
+                    print('Not Solution: IOT Devices charged less than UAV operation time \n')
+                elif hover_charge_consumption > drone.battery_capacity:
+                    print('Not Solution: UAV battery exceeded \n')
+                else: 
+                    print('Solution \n')
+                    # If current solution time and charging is smaller, then record this as best solution
+                    if (total_uav_operation_time < dictionary["time"]) and (total_uav_charge_consumption < dictionary["consumption"][0]):
+                        dictionary.update({
+                            "k": K_value,
+                            "time": total_uav_operation_time,
+                            "consumption": [total_uav_charge_consumption, hover_charge_consumption, flight_consumption],
+                            "path": path_solution,
+                            "clusters": clusters,
+                            "motion": motion_matrix,
+                            "movement": movement_matrix
+                        })
             
-            # Output current computations
-            print(f'D{density} SP{starting_points} K{K_value}')
-            print(f'UAV: Path {aco_path}')
-            print(f'UAV: 1) Charge {hover_charge_consumption:.2f} mAh 2) Time {(total_uav_operation_time/60):.2f} min')
-            # Check if the current solution fits UAV operation time and charge amount requirements
-            if total_uav_operation_time > drone.minimum_operation_time:
-                print('Not Solution: IOT Devices charged less than UAV operation time \n')
-            elif hover_charge_consumption > drone.battery_capacity:
-                print('Not Solution: UAV battery exceeded \n')
-            else: 
-                print('Solution \n')
-                # If current solution time and charging is smaller, then record this as best solution
-                if (total_uav_operation_time < best_time[1]) and (total_uav_charge_consumption < best_consumption[1]): 
-                    best_time[1] = total_uav_operation_time
-                    best_time[0] = K_value
-                    best_consumption[1] = total_uav_charge_consumption
-                    best_consumption[0] = K_value
-                    best_path = path_solution
-                    best_clusters = centroids
-                    best_motion = motion_matrix
+            runWindTest(best_wind)
             K_value += 1
         # starting_points_limit reached, expand on density and try again
         density += density_increment

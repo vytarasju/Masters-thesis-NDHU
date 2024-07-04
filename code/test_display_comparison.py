@@ -6,7 +6,7 @@ from plot import *
 """BEGIN Directory Initialisation"""
 csv_path = '/home/vytska/thesis/code/csv/'
 test_directory = 'output_NASADEM_old_combined'
-test_case = 'D3.5SP3'
+test_case = 'D0.5SP21'
 
 working_directory_path = csv_path + test_directory + '/'
 readCSV_path = working_directory_path.replace(csv_path, '')
@@ -24,6 +24,15 @@ sensors_wind = readCSV(readCSV_path_wind + 'sensors.csv')
 centroids_wind = readCSV(readCSV_path_wind + 'clusters.csv')
 sensors_nowind = readCSV(readCSV_path_wind + 'sensors.csv')
 centroids_nowind = readCSV(readCSV_path_wind + 'clusters.csv')
+
+def readMovementFile(directory_path):
+    movement = []
+    with open(directory_path + 'movement.csv', 'r') as file:
+        reader = csv.reader(file)
+        for line in reader: movement.append(line)
+        return movement
+movement_wind = readMovementFile(working_directory_path_wind)
+movement_nowind = readMovementFile(working_directory_path_nowind)
 
 def readPathFile(directory_path):
     with open(directory_path + 'path.txt', 'r') as file:
@@ -81,6 +90,49 @@ motion_wind = readMotion(working_directory_path_wind)
 motion_nowind = readMotion(working_directory_path_nowind)
 """END Data Read"""
 
+"""BEGIN Processing Data"""
+def getAllPathAndResult(directory_path):
+    all_solutions = []
+    directory_path = directory_path[:-(len(test_case) + 1)]
+    solutions = os.listdir(directory_path)
+    for solution in solutions:
+        solution_path = directory_path + solution + '/'
+        UAV_consumption, UAV_time = readSolutionResults(solution_path)
+        solution_path = readPathFile(solution_path)
+        all_solutions.append([solution, UAV_consumption, solution_path])
+    return all_solutions
+
+all_solutions_wind = getAllPathAndResult(working_directory_path_wind)
+all_solutions_nowind = getAllPathAndResult(working_directory_path_nowind)
+
+def seekDifferentPath():
+    different_paths = []
+    reverse_paths = []
+    for solution_wind in all_solutions_wind:
+        solution_nowind = next((sublist for sublist in all_solutions_nowind if solution_wind[0] in sublist), None)
+        if solution_wind[2] != solution_nowind[2]:
+            if solution_wind[2] == solution_nowind[2][::-1]:
+                reverse_paths.append(solution_wind[0])
+            else:
+                print(f'at {solution_wind[0]}')
+                print(f'wind path {solution_wind[2]}')
+                print(f'nowind path {solution_nowind[2]} \n')
+
+                different_paths.append(solution_wind[0])
+
+# This is just for flying, need to add hovering as well
+def compareNowindActualConsumption():
+    last_destination = 0
+    actual_path_cost = 0
+    for index, destination in enumerate(path_nowind):
+        if index == 0: 
+            last_destination = destination
+            continue
+        actual_path_cost += float(movement_wind[last_destination][destination])
+    return actual_path_cost
+actual_nowind_cost = compareNowindActualConsumption()
+"""END Processing Data"""
+
 """BEGIN Visualisation Functions"""
 def plotBoth():
     fig = plt.figure(figsize=(12, 6))
@@ -93,12 +145,14 @@ def plotBoth():
 
     plt.show()
 
-def compareNowindActualConsumption():
-    last_point, current_point = 0, 0
-    for index, destination in enumerate(path_nowind):
-        if index == 0: 
-            last_point = destination
-            continue
-        current_path = list(filter(lambda x: (x[1] == destination and x[2] == last_point), motion_wind))
+
+
+print(f'WIND Battery Consumption {UAV_consumption_wind} mAh')
+print(f'and its path {path_wind} \n')
+
+print(f'NO WIND Battery Consumption {UAV_consumption_nowind} mAh')
+print(f'Actual NO WIND Battery Consumption would be {actual_nowind_cost} mAh')
+print(f'and its path {path_nowind}')
 compareNowindActualConsumption()
+plotBoth()
 """END Visualisation Functions"""
