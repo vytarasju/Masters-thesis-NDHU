@@ -1,0 +1,28 @@
+This is a quick instruction how to use these scripts and aquire terrain and wind results.
+
+Highly recommend simply using NASADEM for terrain:
+
+ 1) Download terrain data from: https://portal.opentopography.org/raster?opentopoID=OTSDEM.032021.4326.2
+ 2) You will receive .tar.gz file, upload it to NASADEM folder at /code/windninja directory
+ 3) Run "bash convert_NASADEM_tif.sh filename.tar.gz" replacing filename with the the actual name of the
+  file aquired from NASADEM, which if you have not changed, will by default be "output_NASADEM.tar.gz"
+ 4) This script will create an XYZ file, located at /converted, use this for terrain data by using
+  terrain = readTerrainXYZ(filename) and terrain = convertXYZtoMeters(filename) to convert the scale to meters
+ 5) Take .tif file, which is located at /tif directory, it was created after bash script
+ 6) Use that .tif with WindNinja to simulate wind results
+ 7) Get wind results in .asc format, you only need vel.asc and ang.asc, which is velocity and angle of wind
+ 8) Move vel.asc and ang.asc to /wind directory and run "bash convert_wind_afterNASADEM filename", this time
+  usage is sligtly different - when vel.asc and ang.asc are created, they will be named in a specific way.
+  If file name = output_NASADEM.tif, wind angle is 60 degrees and strength is 3 kts, at 30m terrain resolution 
+  then file names are going to be
+   a) output_NASADEM_60_3_30m_vel.asc
+   b) output_NASADEM_60_3_30m_ang.asc
+  Hence in this case the script should be ran with this command:
+  "bash convert_wind_afterNASADEM output_NASADEM_60_3_30m"
+  The script will automatically detect the terrain for this file and the individual vel and ang files
+ 9) Finally, to read these files use:
+  wind = readWindASCWindninja(terrain, wind_velocity_name, wind_angle_name)
+
+Using WindNinja terrain downlaod file, the process is easier, since it automatically downloads the correct tif file 
+and uses that for wind generation, so just run "bash convert_wn_tif.sh filename.tif", which will create XYZ terrain 
+file, drop wind files at /wind directory and use the same read functions.
