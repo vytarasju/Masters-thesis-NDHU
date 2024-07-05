@@ -15,14 +15,20 @@ Change working directory to a place where to save test results
 """
 
 working_directory_path = '/home/vytska/thesis/code/csv/'
-terrain_name = 'TongMen1km.xyz'
+terrain_name = 'LiYu1km.xyz'
 # Value meaning: 1st - angle of original wind input; 2nd - wind speed; 3rd - resolution of terrain input
 wind_name_extention = '60_3_30m'
 
+
+print()
 wind_velocity_name = terrain_name.split('.')[0] + f'_{wind_name_extention}_vel.asc'
 wind_angle_name = terrain_name.split('.')[0] + f'_{wind_name_extention}_ang.asc'
 
-working_directory_path += terrain_name.split('.')[0] + '_combined' + '/'
+wind_parameters_angle = wind_name_extention.split('_')[0]
+wind_parameters_speed = wind_name_extention.split('_')[1]
+
+working_directory_path += terrain_name.split('.')[0] + '_combined' + \
+    f'_{wind_parameters_angle}deg{wind_parameters_speed}kts' '/'
 working_directory_path_wind = working_directory_path + 'wind'+ '/'
 working_directory_path_nowind = working_directory_path + 'nowind'+ '/'
 
