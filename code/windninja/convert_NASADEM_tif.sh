@@ -65,7 +65,7 @@ mkdir -p "$output_dir"
 intermediate_file="${tif_folder}/intermediate.asc"
 
 # Output filenames
-filename_no_ext="${tif_filename%.*}"
+filename_no_ext=$(echo "$filename" | awk -F. '{print $1}')
 output_asc="${tif_folder}/${filename_no_ext}.asc"
 output_xyz="${output_dir}/${filename_no_ext}.xyz"
 output_tif="${tif_folder}/${filename_no_ext}.tif"
