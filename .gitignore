@@ -53,5 +53,8 @@ docs/_build/
 # CSV folder, filled with test run data
 code/csv/
 
-# wind folder, ignoring wind simulation results
+# Ignoring wind and terrain additional files
 code/windninja/wind
+code/windninja/NASADEM
+code/windninja/converted
+code/windninja/tif
