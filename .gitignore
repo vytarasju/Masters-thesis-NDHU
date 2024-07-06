@@ -52,3 +52,6 @@ docs/_build/
 
 # CSV folder, filled with test run data
 code/csv/
+
+# wind folder, ignoring wind simulation results
+code/windninja/wind
