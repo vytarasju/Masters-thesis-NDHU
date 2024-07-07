@@ -5,8 +5,8 @@ from plot import *
 # !!!Test directory should be in code_path/csv!!!
 """BEGIN Directory Initialisation"""
 csv_path = '/home/vytska/thesis/code/csv/'
-test_directory = 'LiYu1km_combined_60deg3kts'
-test_case = 'D0.5SP21'
+test_directory = 'LiYu1km_combined_150deg10kts'
+test_case = 'D0.5SP2'
 
 working_directory_path = csv_path + test_directory + '/'
 readCSV_path = working_directory_path.replace(csv_path, '')
@@ -92,19 +92,20 @@ motion_nowind = readMotion(working_directory_path_nowind)
 """END Data Read"""
 
 """BEGIN Processing Data"""
-def getAllPathAndResult(directory_path):
+def getAllPathResultMovement(directory_path):
     all_solutions = []
     directory_path = directory_path[:-(len(test_case) + 1)]
     solutions = os.listdir(directory_path)
     for solution in solutions:
-        solution_path = directory_path + solution + '/'
-        UAV_consumption, UAV_time, WPT_consumption = readSolutionResults(solution_path)
-        solution_path = readPathFile(solution_path)
-        all_solutions.append([solution, UAV_consumption, solution_path])
+        solution_dir = directory_path + solution + '/'
+        UAV_consumption, UAV_time, WPT_consumption = readSolutionResults(solution_dir)
+        solution_path = readPathFile(solution_dir)
+        solution_movement = readMovementFile(solution_dir)
+        all_solutions.append([solution, UAV_consumption,UAV_time, solution_path, solution_movement])
     return all_solutions
 
-all_solutions_wind = getAllPathAndResult(working_directory_path_wind)
-all_solutions_nowind = getAllPathAndResult(working_directory_path_nowind)
+all_solutions_wind = getAllPathResultMovement(working_directory_path_wind)
+all_solutions_nowind = getAllPathResultMovement(working_directory_path_nowind)
 
 def seekDifferentPath():
     different_paths = []
@@ -115,23 +116,50 @@ def seekDifferentPath():
             if solution_wind[2] == solution_nowind[2][::-1]:
                 reverse_paths.append(solution_wind[0])
             else:
-                print(f'at {solution_wind[0]}')
-                print(f'wind path {solution_wind[2]}')
-                print(f'nowind path {solution_nowind[2]} \n')
+                # print(f'at {solution_wind[0]}')
+                # print(f'wind path {solution_wind[2]}')
+                # print(f'nowind path {solution_nowind[2]} \n')
 
                 different_paths.append(solution_wind[0])
+    return different_paths, reverse_paths
 
 # This is just for flying, need to add hovering as well
-def compareNowindActualConsumption():
+def getPathConsumptionInMovement(path, movement):
     last_destination = 0
     actual_path_cost, total_path_cost = 0, 0
-    for index, destination in enumerate(path_nowind):
+    for index, destination in enumerate(path):
         if index > 0: 
-            actual_path_cost = float(movement_wind[last_destination][destination])
+            actual_path_cost = float(movement[last_destination][destination])
             total_path_cost += actual_path_cost
         last_destination = destination
     return total_path_cost
-actual_nowind_cost = compareNowindActualConsumption()
+actual_nowind_cost = getPathConsumptionInMovement(path_nowind, movement_wind)
+
+def getAverageFlyConsumption():
+    consumption_fly_wind = 0
+    consumption_fly_nowind = 0
+    consumption_fly_nowind_againstwind = 0
+    len_solution = len(all_solutions_wind)
+    for index, solution in enumerate(all_solutions_wind):
+        consumption_fly_wind += float(solution[1][2])
+        consumption_fly_nowind += float(all_solutions_nowind[index][1][2])
+        if index == 23: print(all_solutions_nowind[index][3], solution[3])
+        consumption_fly_nowind_againstwind += float(getPathConsumptionInMovement(all_solutions_nowind[index][3], solution[4]))
+    consumption_fly_wind /= len_solution
+    consumption_fly_nowind /= len_solution
+    consumption_fly_nowind_againstwind /= len_solution
+    return consumption_fly_wind, consumption_fly_nowind, consumption_fly_nowind_againstwind
+consumption_fly_wind, consumption_fly_nowind, consumption_fly_nowind_againstwind = getAverageFlyConsumption()
+
+def compareValuesProc(a, b):
+    if a == b:
+        return "The values are equal."
+    elif a > b:
+        difference = ((a - b) / b) * 100
+        return f"The first value is bigger by {difference:.2f}%"
+    else:
+        difference = ((b - a) / a) * 100
+        return f"The second value is bigger by {difference:.2f}%"
 """END Processing Data"""
 
 """BEGIN Visualisation Functions"""
@@ -147,14 +175,25 @@ def plotBoth():
     plt.show()
 
 
+"""GET consumtion differences"""
+print(f'Fly consumption: ')
+print(f'wind {consumption_fly_wind} mAh')
+print(f'nowind claimed {consumption_fly_nowind} mAh')
+print(f'nowind real {consumption_fly_nowind_againstwind} mAh')
+print(f'first claimed, second real: {compareValuesProc(consumption_fly_nowind, consumption_fly_nowind_againstwind)}')
 
-print(f'WIND Battery Consumption {UAV_consumption_wind[0]} mAh')
-print(f'where hover used {UAV_consumption_wind[1]} and flight {UAV_consumption_wind[2]}')
-print(f'and its path {path_wind} \n')
+"""GET different paths"""
+# different_paths, reverse_paths = seekDifferentPath()
+# print(different_paths)
 
-print(f'NO WIND Battery Consumption {UAV_consumption_nowind[0]} mAh')
-print(f'where hover used {UAV_consumption_nowind[1]} and flight {UAV_consumption_nowind[2]}')
-print(f'Actual NO WIND Battery Consumption would be {actual_nowind_cost} mAh')
-print(f'and its path {path_nowind}')
-plotBoth()
+"""GET specific path comparison"""
+# print(f'WIND Battery Consumption {UAV_consumption_wind[0]} mAh')
+# print(f'where hover used {UAV_consumption_wind[1]} and flight {UAV_consumption_wind[2]}')
+# print(f'and its path {path_wind} \n')
+
+# print(f'NO WIND Battery Consumption {UAV_consumption_nowind[0]} mAh')
+# print(f'where hover used {UAV_consumption_nowind[1]} and flight {UAV_consumption_nowind[2]}')
+# print(f'Actual NO WIND Battery Consumption would be {actual_nowind_cost:.2f} mAh')
+# print(f'and its path {path_nowind}')
+# plotBoth()
 """END Visualisation Functions"""

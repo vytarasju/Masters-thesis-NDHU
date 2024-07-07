@@ -3,7 +3,7 @@ from read_write_data import *
 from plot import *
 from algorithms import *
 from measurement import *
-from terrain_sensors_generation import *
+from sensors_generation import *
 
 terrain = readTerrainXYZ('output_NASADEM_old.xyz')
 terrain = convertXYZtoMeters(terrain)
@@ -36,7 +36,7 @@ wpt = WPT()
 
 provide_charge = iot.batteryConsumtionGivenTime(0, drone.minimum_operation_time)
 
-sensors = generateSensorsDensity(terrain, sensors_num, density, starting_points, terrain_resolution)
+sensors = generateSensorsCentralized(terrain, sensors_num, density, starting_points, terrain_resolution)
 centroids, wpt_area, cluster_charge_time, K_value = clusterXMeansChargeTime(terrain, sensors, angle_WPT, min_hover_WPT, provide_charge)
 
 movement_matrix, time_matrix, motion_matrix = getMotion(centroids, terrain, num_points=UAV_steps, elevation=UAV_elevation)

@@ -3,7 +3,7 @@ import random
 import math
 
 # Takes random terrain points to generate sensor locations
-def generateSensors(terrain, sensors_num):
+def generateSensorsUniform(terrain, sensors_num):
     sensors = []
     terrain_len = len(terrain) - 1
     # Take random index member in terrain for a random sensor placement
@@ -14,7 +14,7 @@ def generateSensors(terrain, sensors_num):
 
 # Creates random starting points which then acts as center points for other sensors to be generated
 # Starting points are generated far enough from terrain edge, so that generated sensors would not be out of terrain bounds
-def generateSensorsDensity(terrain, sensors_num, density, starting_points, terrain_resolution):
+def generateSensorsCentralized(terrain, sensors_num, density, starting_points, terrain_resolution):
     sensors = []
     sensors_num -= starting_points
     sensors_per_center = math.floor(sensors_num / starting_points)

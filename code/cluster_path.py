@@ -84,7 +84,7 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
             if Check_K_ceiling == True: 
                 limit_counter += 1
                 print(f'K Ceiling {limit_counter}')
-                if limit_counter >= 3: 
+                if limit_counter >= 5:
                     print('ITERATION END: K Value Ceiling reached')
                     return 0
             elif Check_K_floor == True:
