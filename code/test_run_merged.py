@@ -102,8 +102,8 @@ for terrain_name in terrain_name_list:
             file.write(text + '\n')
             print(text)
 
-        def dictionaryValueReset(best_variables):
-            return {
+        def dictionaryValueReset(best_variables, type):
+            values = {
                 "k": best_variables["k"],
                 "time": best_variables["time"],
                 "consumption": best_variables["consumption"].copy(),
@@ -112,6 +112,8 @@ for terrain_name in terrain_name_list:
                 "motion": best_variables["motion"].copy(),
                 "movement": best_variables["movement"].copy(),
             }
+            if type == 'nowind': values["movement_wind"] = best_variables["movement"].copy()
+            return values
 
         # Best performing variables
         best_variables = {
@@ -129,7 +131,7 @@ for terrain_name in terrain_name_list:
 
         # Helper Function: Saves results in specific test run directory
         # Usage: In end iteration function
-        def saveResults(dictionary, dir_path):
+        def saveResults(dictionary, dir_path, type = 'none'):
             # K_value max reached, output best solution, if it was found
             if dictionary["time"] !=  float('inf') and dictionary["consumption"][0] !=  float('inf'):
                 write_print(f'BEST TOTAL SOLUTION WAS FOUND')
@@ -166,6 +168,11 @@ for terrain_name in terrain_name_list:
                     writer = csv.writer(solution_file)
                     for line in dictionary["movement"]:
                             writer.writerow(line)
+                if type == 'nowind':
+                    with open(solution_working_directory_path + 'movement_wind.csv', mode='w') as solution_file:
+                        writer = csv.writer(solution_file)
+                        for line in dictionary["movement_wind"]:
+                                writer.writerow(line)
             else:
                 write_print(f'NO TOTAL SOLUTION WAS FOUND')
 
@@ -177,16 +184,16 @@ for terrain_name in terrain_name_list:
 
             # Save wind and nowind results
             write_print(f'WIND results')
-            saveResults(dictionary=best_wind, dir_path=working_directory_path_wind)
+            saveResults(dictionary=best_wind, dir_path=working_directory_path_wind, type = 'wind')
             write_print(f'NOWIND results')
-            saveResults(dictionary=best_nowind, dir_path=working_directory_path_nowind)
+            saveResults(dictionary=best_nowind, dir_path=working_directory_path_nowind, type = 'nowind')
             write_print(f'\n')
 
             # Reset variables
             K_value = 1
             K_ceiling_counter = 0
-            best_wind = dictionaryValueReset(best_variables)
-            best_nowind = dictionaryValueReset(best_variables)
+            best_wind = dictionaryValueReset(best_variables, 'wind')
+            best_nowind = dictionaryValueReset(best_variables, 'nowind')
             
             continue_loop = True
             # If starting_points still can be increased, then increase it, if not then increase density and reset starting_points
@@ -201,12 +208,14 @@ for terrain_name in terrain_name_list:
 
         # Runs through the whole solution finding process
         # Usage: after sensors and clusters found for each iteration
-        def runTest(K_ceiling_counter, dictionary, type):
+        def runTest(K_ceiling_counter, dictionary, movement_wind = 0, type = 'none'):
             # Find all possilbe paths the UAV can take and get power consumption needed at eaceh hovering point
-            if type == 'wind': 
+            if type == 'wind':
+                print(f'WIND D{density} SP{starting_points} K{K_value}')
                 getMotionCost = 'consumption'
                 hoverCostType = 'wind'
-            elif type == 'nowind': 
+            elif type == 'nowind':
+                print(f'NOWIND D{density} SP{starting_points} K{K_value}')
                 getMotionCost = 'distance'
                 hoverCostType = 'nowind'
 
@@ -237,8 +246,6 @@ for terrain_name in terrain_name_list:
             total_uav_operation_time = uav_hover_time + uav_flight_time
             
             # Output current computations
-            if type == "nowind": print(f'NOWIND D{density} SP{starting_points} K{K_value}')
-            elif type == "wind": print(f'WIND D{density} SP{starting_points} K{K_value}')
             print(f'UAV: Path {aco_path}')
             print(f'UAV: 1) Charge {hover_charge_consumption:.2f} mAh 2) Time {(total_uav_operation_time/60):.2f} min')
 
@@ -262,11 +269,13 @@ for terrain_name in terrain_name_list:
                         "movement": movement_matrix,
                         "wpt-consumption": wpt_charge_consumption
                     })
+                    if type == 'nowind': dictionary["movement_wind"] = movement_wind
                     K_ceiling_counter = 0
                 else: 
                     K_ceiling_counter += 1
                     if K_ceiling_counter == K_ceiling_limit: continue_loop = False   
-            return  dictionary, K_ceiling_counter, continue_loop
+            if type == 'wind': return  dictionary, K_ceiling_counter, continue_loop, movement_matrix
+            if type == 'nowind': return  dictionary, K_ceiling_counter, continue_loop
 
         K_value = 1
         K_ceiling_counter, K_ceiling_limit = 0, 5
@@ -285,8 +294,8 @@ for terrain_name in terrain_name_list:
                 sensors = generateSensorsCentralized(terrain, sensors_num, density, starting_points, terrain_resolution)
 
                 # Rest dictionary values
-                best_wind = dictionaryValueReset(best_variables)
-                best_nowind = dictionaryValueReset(best_variables)
+                best_wind = dictionaryValueReset(best_variables, 'wind')
+                best_nowind = dictionaryValueReset(best_variables, 'nowind')
 
                 # Finding best K_value
                 while K_value < sensors_num:
@@ -300,8 +309,8 @@ for terrain_name in terrain_name_list:
                         elif not continue_density_loop: break
 
                     # run testruns for wind and nowind solutions
-                    best_wind, K_ceiling_counter, continue_sp_loop_wind = runTest(K_ceiling_counter, best_wind, type="wind")
-                    best_nowind, K_ceiling_counter, continue_sp_loop_nowind = runTest(K_ceiling_counter, best_nowind, type="nowind")
+                    best_wind, K_ceiling_counter, continue_sp_loop_wind, movement_wind = runTest(K_ceiling_counter, best_wind, type="wind")
+                    best_nowind, K_ceiling_counter, continue_sp_loop_nowind = runTest(K_ceiling_counter, best_nowind, movement_wind, type="nowind")
 
                     if not continue_sp_loop_wind or not continue_sp_loop_nowind:
                         if not continue_sp_loop_wind and not continue_sp_loop_nowind: write_print('ITEREND: K ceiling reached by wind and nowind')
