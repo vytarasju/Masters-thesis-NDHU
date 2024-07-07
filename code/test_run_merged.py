@@ -218,15 +218,21 @@ for terrain_name in terrain_name_list:
                     #Helper function: runs Wind test
                     def runTest(dictionary, type):
                         # Find all possilbe paths the UAV can take and get power consumption needed at eaceh hovering point
-                        movement_matrix, time_matrix, motion_matrix = getMotion(clusters, terrain, UAV_steps, UAV_elevation, 'consumption', wind)
-                        hover_matrix = hoverPowerConsumptionAtCentroid(clusters, terrain, cluster_charge_time, wind, type = 'wind')
+                        if type == 'wind': 
+                            getMotionCost = 'consumption'
+                            hoverCostType = 'wind'
+                        elif type == 'nowind': 
+                            getMotionCost = 'distance'
+                            hoverCostType = 'nowind'
+
+                        movement_matrix, time_matrix, motion_matrix = getMotion(clusters, terrain, UAV_steps, UAV_elevation, getMotionCost, wind)
+                        hover_matrix = hoverPowerConsumptionAtCentroid(clusters, terrain, cluster_charge_time, wind, type = hoverCostType)
 
                         # Find path solution for UAV
                         ant_colony = AntColony(movement_matrix, num_ants=80, num_iterations=50, evaporation_rate=0.5, alpha=1, beta=1)
                         aco_path, aco_cost = ant_colony.find_shortest_path()
                         path_solution = aco_path
                         flight_consumption = aco_cost
-
                         if type == "nowind": aco_cost, movement_matrix = drone.convertDistancetoMeasurements(aco_cost, movement_matrix, type='milliamphours')
 
                         # Find WPT and hovering charge consumption
@@ -269,6 +275,7 @@ for terrain_name in terrain_name_list:
                                     "movement": movement_matrix,
                                     "wpt-consumption": wpt_charge_consumption
                                 })
+                        
                     
                     # run testruns for wind and nowind solutions
                     runTest(best_wind, type="wind")
