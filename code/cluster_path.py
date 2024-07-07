@@ -80,7 +80,7 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
         # If Charging time is equals to or exceedes UAV operation time, this k is not the solution
         # print(f'k: {K_value}, total_charge: {total_charge_time / 60} min')
         if total_charge_time >= drone.minimum_operation_time:
-            print(f'Clustering failed: charge time {(total_charge_time/60):.2f} min at {K_value}K')
+            print(f'Cluster NOTSOLUTION: charge time {(total_charge_time/60):.2f} min at {K_value}K')
             if Check_K_ceiling == True: 
                 limit_counter += 1
                 print(f'K Ceiling {limit_counter}')
