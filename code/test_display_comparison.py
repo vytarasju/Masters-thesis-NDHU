@@ -5,7 +5,7 @@ from plot import *
 # !!!Test directory should be in code_path/csv!!!
 """BEGIN Directory Initialisation"""
 csv_path = '/home/vytska/thesis/code/csv/'
-test_directory = 'output_NASADEM_old_combined'
+test_directory = 'LiYu1km_combined_60deg3kts'
 test_case = 'D0.5SP21'
 
 working_directory_path = csv_path + test_directory + '/'
@@ -46,15 +46,16 @@ path_wind = readPathFile(working_directory_path_wind)
 path_nowind = readPathFile(working_directory_path_nowind)
 
 def readSolutionResults(directory_path):
-    UAV_consumption = 0
+    UAV_consumption = []
     UAV_time = 0
     with open(directory_path + 'solution_results.txt', 'r') as file:
         for index, line in enumerate(file):
-            if index == 1: UAV_consumption = line.split(':')[1].split(' ')[1]
-            if index == 2: UAV_time = line.split(':')[1].split(' ')[1]
-    return UAV_consumption, UAV_time
-UAV_consumption_wind, UAV_time_wind = readSolutionResults(working_directory_path_wind)
-UAV_consumption_nowind, UAV_time_nowind = readSolutionResults(working_directory_path_nowind)
+            if index > 0 and index < 4: UAV_consumption.append(line.split(':')[1].split(' ')[1])
+            if index == 4: UAV_time = line.split(':')[1].split(' ')[1]
+            if index == 5: WPT_consumption = line.split(':')[1].split(' ')[1]
+    return UAV_consumption, UAV_time, WPT_consumption
+UAV_consumption_wind, UAV_time_wind, WPT_consumption_wind = readSolutionResults(working_directory_path_wind)
+UAV_consumption_nowind, UAV_time_nowind, WPT_consumption_nowind = readSolutionResults(working_directory_path_nowind)
 
 def readMotion(directory_path):
     motion = []
@@ -97,7 +98,7 @@ def getAllPathAndResult(directory_path):
     solutions = os.listdir(directory_path)
     for solution in solutions:
         solution_path = directory_path + solution + '/'
-        UAV_consumption, UAV_time = readSolutionResults(solution_path)
+        UAV_consumption, UAV_time, WPT_consumption = readSolutionResults(solution_path)
         solution_path = readPathFile(solution_path)
         all_solutions.append([solution, UAV_consumption, solution_path])
     return all_solutions
@@ -123,13 +124,13 @@ def seekDifferentPath():
 # This is just for flying, need to add hovering as well
 def compareNowindActualConsumption():
     last_destination = 0
-    actual_path_cost = 0
+    actual_path_cost, total_path_cost = 0, 0
     for index, destination in enumerate(path_nowind):
-        if index == 0: 
-            last_destination = destination
-            continue
-        actual_path_cost += float(movement_wind[last_destination][destination])
-    return actual_path_cost
+        if index > 0: 
+            actual_path_cost = float(movement_wind[last_destination][destination])
+            total_path_cost += actual_path_cost
+        last_destination = destination
+    return total_path_cost
 actual_nowind_cost = compareNowindActualConsumption()
 """END Processing Data"""
 
@@ -147,12 +148,13 @@ def plotBoth():
 
 
 
-print(f'WIND Battery Consumption {UAV_consumption_wind} mAh')
+print(f'WIND Battery Consumption {UAV_consumption_wind[0]} mAh')
+print(f'where hover used {UAV_consumption_wind[1]} and flight {UAV_consumption_wind[2]}')
 print(f'and its path {path_wind} \n')
 
-print(f'NO WIND Battery Consumption {UAV_consumption_nowind} mAh')
+print(f'NO WIND Battery Consumption {UAV_consumption_nowind[0]} mAh')
+print(f'where hover used {UAV_consumption_nowind[1]} and flight {UAV_consumption_nowind[2]}')
 print(f'Actual NO WIND Battery Consumption would be {actual_nowind_cost} mAh')
 print(f'and its path {path_nowind}')
-compareNowindActualConsumption()
 plotBoth()
 """END Visualisation Functions"""
