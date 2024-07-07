@@ -189,11 +189,13 @@ for terrain_name in terrain_name_list:
             
             continue_loop = True
             # If starting_points still can be increased, then increase it, if not then increase density and reset starting_points
-            if starting_points <= starting_points_limit: 
+            if starting_points < starting_points_limit: 
                 starting_points += starting_points_increment
                 # Regenerate sensors at higher starting_points
                 sensors = generateSensorsDensity(terrain, sensors_num, density, starting_points, terrain_resolution)
-            else: continue_loop = False
+            elif starting_points >= starting_points_limit:
+                continue_loop = False
+                sensors = 0
             return K_value, K_ceiling_counter, best_wind, best_nowind, continue_loop, starting_points, sensors
 
         # Runs through the whole solution finding process
@@ -292,20 +294,21 @@ for terrain_name in terrain_name_list:
                     try: clusters, wpt_area, cluster_charge_time, K_value = clusterXMeansChargeTime(terrain, sensors, angle_WPT, min_hover_WPT, provide_charge, K_value)
                     except:
                         write_print('ITEREND: X-Means exception reached')
-                        K_value, K_ceiling_counter, best_wind, best_nowind, continue_loop, starting_points, sensors = endIteration(K_value, starting_points, K_ceiling_counter, best_wind, best_nowind)
-                        if continue_loop == True: continue
-                        elif continue_loop == False: break
+                        K_value, K_ceiling_counter, best_wind, best_nowind, continue_density_loop, starting_points, sensors = endIteration(K_value, starting_points, K_ceiling_counter, best_wind, best_nowind)
+                        if continue_density_loop == True: continue
+                        elif continue_density_loop == False: break
 
                     # run testruns for wind and nowind solutions
-                    best_wind, K_ceiling_counter, continue_loop_wind = runTest(K_ceiling_counter, best_wind, type="wind")
-                    best_nowind, K_ceiling_counter, continue_loop_nowind = runTest(K_ceiling_counter, best_nowind, type="nowind")
+                    best_wind, K_ceiling_counter, continue_sp_loop_wind = runTest(K_ceiling_counter, best_wind, type="wind")
+                    best_nowind, K_ceiling_counter, continue_sp_loop_nowind = runTest(K_ceiling_counter, best_nowind, type="nowind")
 
-                    if not continue_loop_wind or not continue_loop_nowind: 
-                        if not continue_loop_wind: write_print('ITEREND: K ceiling reached by wind')
-                        elif not continue_loop_nowind: write_print('ITEREND: K ceiling reached by nowind')
-                        K_value, K_ceiling_counter, best_wind, best_nowind, continue_loop, starting_points, sensors = endIteration(K_value, starting_points, K_ceiling_counter, best_wind, best_nowind)
-                        if continue_loop == True: continue
-                        elif continue_loop == False: break
+                    if not continue_sp_loop_wind or not continue_sp_loop_nowind:
+                        if not continue_sp_loop_wind and not continue_sp_loop_nowind: write_print('ITEREND: K ceiling reached by wind and nowind')
+                        elif not continue_sp_loop_wind: write_print('ITEREND: K ceiling reached by wind')
+                        elif not continue_sp_loop_nowind: write_print('ITEREND: K ceiling reached by nowind')
+                        K_value, K_ceiling_counter, best_wind, best_nowind, continue_density_loop, starting_points, sensors = endIteration(K_value, starting_points, K_ceiling_counter, best_wind, best_nowind)
+                        if continue_density_loop == True: continue
+                        elif continue_density_loop == False: break
                     K_value += 1
                 # starting_points_limit reached, expand on density and try again
                 density += density_increment
