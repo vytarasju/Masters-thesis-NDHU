@@ -17,7 +17,33 @@ Change working directory to a place where to save test results
 
 terrain_name_list = ['LiYu1km.xyz']
 # Value meaning: 1st - angle of original wind input; 2nd - wind speed; 3rd - resolution of terrain input
-wind_name_extention_list = ['60_3_30m', '60_7_30m']
+wind_name_extention_list = ['60_3_30m']
+
+"""BEGIN Motion and WPT Parameter Defintion"""
+# For X-Means
+min_hover_WPT = 2 #meters
+angle_WPT = 120 #degrees
+
+# For UAV
+UAV_speed = 30 #meters/second
+UAV_elevation = 39 #meters
+UAV_steps = 20 #steps between points
+"""END Parameter Defintion"""
+
+"""BEGIN Sensor and Terrain Parameter Definition"""
+terrain_resolution = 30 #according terrain data used
+
+sensors_num = 500
+density = 0.5
+starting_points = 1
+
+# For iteration process
+density_increment = 0.5
+density_limit = 10
+
+starting_points_increment = 1
+starting_points_limit = 20
+"""END Sensor and Terrain Parameter Definition"""
 
 # Iterate through multiple terraind and winds
 for terrain_name in terrain_name_list:
@@ -44,32 +70,6 @@ for terrain_name in terrain_name_list:
         createWorkingDirectory(working_directory_path)
         createWorkingDirectory(working_directory_path_wind)
         createWorkingDirectory(working_directory_path_nowind)
-
-        """BEGIN Motion and WPT Parameter Defintion"""
-        # For X-Means
-        min_hover_WPT = 2 #meters
-        angle_WPT = 120 #degrees
-
-        # For UAV
-        UAV_speed = 30 #meters/second
-        UAV_elevation = 39 #meters
-        UAV_steps = 20 #steps between points
-        """END Parameter Defintion"""
-
-        """BEGIN Sensor and Terrain Parameter Definition"""
-        terrain_resolution = 30 #according terrain data used
-
-        sensors_num = 500
-        density = 0.5
-        starting_points = 1
-
-        # For iteration process
-        density_increment = 0.5
-        density_limit = 10
-
-        starting_points_increment = 1
-        starting_points_limit = 20
-        """END Sensor and Terrain Parameter Definition"""
 
         """BEGIN Terrain, Wind and Devices Definition"""
         terrain = readTerrainXYZ(terrain_name)
@@ -216,8 +216,8 @@ for terrain_name in terrain_name_list:
             ant_colony = AntColony(movement_matrix, num_ants=80, num_iterations=50, evaporation_rate=0.5, alpha=1, beta=1)
             aco_path, aco_cost = ant_colony.find_shortest_path()
             path_solution = aco_path
-            flight_consumption = aco_cost
             if type == "nowind": aco_cost, movement_matrix = drone.convertDistancetoMeasurements(aco_cost, movement_matrix, type='milliamphours')
+            flight_consumption = aco_cost
 
             # Find WPT and hovering charge consumption
             total_cluster_charge_time = uav_hover_time = sum(cluster_charge_time)
@@ -295,8 +295,8 @@ for terrain_name in terrain_name_list:
                     except:
                         write_print('ITEREND: X-Means exception reached')
                         K_value, K_ceiling_counter, best_wind, best_nowind, continue_density_loop, starting_points, sensors = endIteration(K_value, starting_points, K_ceiling_counter, best_wind, best_nowind)
-                        if continue_density_loop == True: continue
-                        elif continue_density_loop == False: break
+                        if continue_density_loop: continue
+                        elif not continue_density_loop: break
 
                     # run testruns for wind and nowind solutions
                     best_wind, K_ceiling_counter, continue_sp_loop_wind = runTest(K_ceiling_counter, best_wind, type="wind")
