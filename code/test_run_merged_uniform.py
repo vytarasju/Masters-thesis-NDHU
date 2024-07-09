@@ -33,6 +33,7 @@ for terrain_name in terrain_name_list:
             f'_{wind_parameters_angle}deg{wind_parameters_speed}kts' '/'
         working_directory_path_wind = working_directory_path + 'wind'+ '/'
         working_directory_path_nowind = working_directory_path + 'nowind'+ '/'
+        working_directory_path_nowind_inwind = working_directory_path + 'nowind-inwind'+ '/'
 
         # Remove the directory if it exists to reset results for retests
         def createWorkingDirectory(dir_path):
@@ -44,6 +45,7 @@ for terrain_name in terrain_name_list:
         createWorkingDirectory(working_directory_path)
         createWorkingDirectory(working_directory_path_wind)
         createWorkingDirectory(working_directory_path_nowind)
+        createWorkingDirectory(working_directory_path_nowind_inwind)
         
         """BEGIN Motion and WPT Parameter Defintion"""
         # For X-Means
@@ -58,8 +60,8 @@ for terrain_name in terrain_name_list:
 
         """BEGIN Sensor Parameter Definition"""
         sensors_num = 0
-        sensors_num_limit = 100
-        sensors_num_increment = 5
+        sensors_num_limit = 50
+        sensors_num_increment = 2
         """END Sensor Parameter Definition"""
 
         """BEGIN Terrain, Wind and Devices Definition"""
@@ -116,6 +118,8 @@ for terrain_name in terrain_name_list:
         }
         best_wind = best_variables.copy()
         best_nowind = best_variables.copy()
+        best_nowind_inwind = best_variables.copy()
+
 
         # Helper Function: Saves results in specific test run directory
         # Usage: In end iteration function
@@ -160,7 +164,7 @@ for terrain_name in terrain_name_list:
                 write_print(f'NO TOTAL SOLUTION WAS FOUND')
 
         # Usage: end iteration after all K values have been checked
-        def endIteration(K_value, sensors_num, best_wind, best_nowind):
+        def endIteration(K_value, sensors_num, best_wind, best_nowind, best_nowind_inwind):
             # Print header information
             print(f'Terrain: {terrain_name}; Wind{wind_name_extention}')
             write_print(f'SN{sensors_num}: At {K_value}K limit reached')
@@ -170,27 +174,46 @@ for terrain_name in terrain_name_list:
             saveResults(dictionary=best_wind, dir_path=working_directory_path_wind)
             write_print(f'NOWIND results')
             saveResults(dictionary=best_nowind, dir_path=working_directory_path_nowind)
+            write_print(f'NOWIND-INWIND results')
+            saveResults(dictionary=best_nowind_inwind, dir_path=working_directory_path_nowind_inwind)
             write_print(f'\n')
 
         # Runs through the whole solution finding process
         # Usage: after sensors and clusters found for each iteration
         def runTest(K_ceiling_counter, dictionary, type):
             # Find all possilbe paths the UAV can take and get power consumption needed at eaceh hovering point
-            if type == 'wind': 
+            if type == 'wind':
+                print(f'WIND SN{sensors_num} K{K_value}')
                 getMotionCost = 'consumption'
                 hoverCostType = 'wind'
-            elif type == 'nowind': 
+            elif type == 'nowind':
+                print(f'NOWIND SN{sensors_num} K{K_value}')
                 getMotionCost = 'distance'
                 hoverCostType = 'nowind'
+            elif type == 'nowind-inwind':
+                print(f'NOWIND-INWIND SN{sensors_num} K{K_value}')
+                getMotionCost = 'distance'
+                hoverCostType = 'wind'
 
             movement_matrix, time_matrix, motion_matrix = getMotion(clusters, terrain, UAV_steps, UAV_elevation, getMotionCost, wind)
             hover_matrix = hoverPowerConsumptionAtCentroid(clusters, terrain, cluster_charge_time, wind, type = hoverCostType)
+            real_movement_matrix = []
+            if type == 'nowind-inwind':
+                real_movement_matrix, time_matrix, not_needed_motion_matrix = getMotion(clusters, terrain, UAV_steps, UAV_elevation, 'consumption', wind)
 
             # Find path solution for UAV
             ant_colony = AntColony(movement_matrix, num_ants=80, num_iterations=50, evaporation_rate=0.5, alpha=1, beta=1)
             aco_path, aco_cost = ant_colony.find_shortest_path()
             path_solution = aco_path
             if type == "nowind": aco_cost, movement_matrix = drone.convertDistancetoMeasurements(aco_cost, movement_matrix, type='milliamphours')
+            if type == "nowind-inwind":
+                total_path_cost = 0
+                for index, destination in enumerate(path_solution):
+                    if index > 0: 
+                        actual_path_cost = real_movement_matrix[last_destination][destination]
+                        total_path_cost += actual_path_cost
+                    last_destination = destination
+                aco_cost = total_path_cost
             flight_consumption = aco_cost
 
             # Find WPT and hovering charge consumption
@@ -210,8 +233,6 @@ for terrain_name in terrain_name_list:
             total_uav_operation_time = uav_hover_time + uav_flight_time
             
             # Output current computations
-            if type == "nowind": print(f'NOWIND SN{sensors_num} K{K_value}')
-            elif type == "wind": print(f'WIND SN{sensors_num} K{K_value}')
             print(f'UAV: Path {aco_path}')
             print(f'UAV: 1) Charge {hover_charge_consumption:.2f} mAh 2) Time {(total_uav_operation_time/60):.2f} min')
 
@@ -219,7 +240,7 @@ for terrain_name in terrain_name_list:
             # Check if the current solution fits UAV operation time and charge amount requirements
             if total_uav_operation_time > drone.minimum_operation_time:
                 print('Not Solution: IOT Devices charged less than UAV operation time \n')
-            elif hover_charge_consumption > drone.battery_capacity:
+            elif total_uav_charge_consumption > drone.battery_capacity:
                 print('Not Solution: UAV battery exceeded \n')
             else: 
                 print('Solution \n')
@@ -245,7 +266,7 @@ for terrain_name in terrain_name_list:
         provide_charge = iot.batteryConsumtionGivenTime(0, drone.minimum_operation_time)
         # Write and Print all of the log text to have backup for later and to keep track on live iteration progression
         with open(working_directory_path + 'test_results.txt', mode='w') as file:
-            write_print(f'Charge {sensors_num} sensors up to {provide_charge:.2f} mAh, to operate for {(drone.minimum_operation_time / 60):.2f} min')
+            write_print(f'Charge at most {sensors_num_limit} sensors up to {provide_charge:.2f} mAh, to operate for {(drone.minimum_operation_time / 60):.2f} min')
             write_print(f'\n')
 
             # Increase density and starting points
@@ -260,14 +281,15 @@ for terrain_name in terrain_name_list:
                 # Rest dictionary values
                 best_wind = dictionaryValueReset(best_variables)
                 best_nowind = dictionaryValueReset(best_variables)
-                continue_loop_wind, continue_loop_nowind = True, True
+                best_nowind_inwind = dictionaryValueReset(best_variables)
+                continue_loop_wind, continue_loop_nowind, continue_loop_nowind_inwind = True, True, True
 
                 # Finding best K_value
                 while K_value <= sensors_num:
                     try: clusters, wpt_area, cluster_charge_time, K_value = clusterXMeansChargeTime(terrain, sensors, angle_WPT, min_hover_WPT, provide_charge, K_value)
                     except:
                         write_print('ITEREND: X-Means exception reached')
-                        endIteration(K_value, sensors_num, best_wind, best_nowind)
+                        endIteration(K_value, sensors_num, best_wind, best_nowind, best_nowind_inwind)
                         break
 
                     # run testruns for wind and nowind solutions
@@ -275,11 +297,13 @@ for terrain_name in terrain_name_list:
                     elif not continue_loop_wind: print(f'WIND SN{sensors_num} K{K_value} \n K Ceiling Reached')
                     if continue_loop_nowind: best_nowind, K_ceiling_counter, continue_loop_nowind = runTest(K_ceiling_counter, best_nowind, type="nowind")
                     elif not continue_loop_nowind: print(f'NOWIND SN{sensors_num} K{K_value} \n K Ceiling Reached')
+                    if continue_loop_nowind_inwind: best_nowind, K_ceiling_counter, continue_loop_nowind_inwind = runTest(K_ceiling_counter, best_nowind_inwind, type="nowind-inwind")
+                    elif not continue_loop_nowind: print(f'NOWIND-INWIND SN{sensors_num} K{K_value} \n K Ceiling Reached')
 
-                    if not continue_loop_wind and not continue_loop_nowind:
-                        write_print('ITEREND: K ceiling reached by wind and nowind')
-                        endIteration(K_value, sensors_num, best_wind, best_nowind)
+                    if not continue_loop_wind and not continue_loop_nowind and not continue_loop_nowind_inwind:
+                        write_print('ITEREND: K ceiling reached by all solutions')
+                        endIteration(K_value, sensors_num, best_wind, best_nowind, best_nowind_inwind)
                         break
                     K_value += 1
                 write_print('ITEREND: K_value reached sensors_num')
-                endIteration(K_value, sensors_num, best_wind, best_nowind)
+                endIteration(K_value, sensors_num, best_wind, best_nowind, best_nowind_inwind)

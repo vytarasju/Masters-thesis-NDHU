@@ -5,8 +5,8 @@ from plot import *
 # !!!Test directory should be in code_path/csv!!!
 """BEGIN Directory Initialisation"""
 csv_path = '/home/vytska/thesis/code/csv/'
-test_directory = 'TongMen1km_combined_centralized_190deg7kts'
-test_case = 'D0.5SP1'
+test_directory = 'LiYu1km_combined_uniform_150deg10kts'
+test_case = 'SN30'
 
 working_directory_path = csv_path + test_directory + '/'
 readCSV_path = working_directory_path.replace(csv_path, '')
@@ -22,8 +22,8 @@ readCSV_path_nowind = readCSV_path + 'nowind/' + test_case + '/'
 
 sensors_wind = readCSV(readCSV_path_wind + 'sensors.csv')
 centroids_wind = readCSV(readCSV_path_wind + 'clusters.csv')
-sensors_nowind = readCSV(readCSV_path_nowind + 'sensors.csv')
-centroids_nowind = readCSV(readCSV_path_nowind + 'clusters.csv')
+sensors_nowind = readCSV(readCSV_path_wind + 'sensors.csv')
+centroids_nowind = readCSV(readCSV_path_wind + 'clusters.csv')
 
 def readMovementFile(directory_path):
     movement = []
@@ -34,13 +34,13 @@ def readMovementFile(directory_path):
 movement_wind = readMovementFile(working_directory_path_wind)
 movement_nowind = readMovementFile(working_directory_path_nowind)
 
-def readMovementWindFile(directory_path):
-    movement = []
-    with open(directory_path + 'movement_wind.csv', 'r') as file:
-        reader = csv.reader(file)
-        for line in reader: movement.append(line)
-        return movement
-movement_wind_nowind = readMovementWindFile(working_directory_path_nowind)
+# def readMovementWindFile(directory_path):
+#     movement = []
+#     with open(directory_path + 'movement_wind.csv', 'r') as file:
+#         reader = csv.reader(file)
+#         for line in reader: movement.append(line)
+#         return movement
+# movement_wind_nowind = readMovementWindFile(working_directory_path_nowind)
 
 def readPathFile(directory_path):
     with open(directory_path + 'path.txt', 'r') as file:
@@ -180,7 +180,7 @@ def getPathConsumptionInMovement(path, movement):
             total_path_cost += actual_path_cost
         last_destination = destination
     return total_path_cost
-actual_nowind_cost = getPathConsumptionInMovement(path_nowind, movement_wind_nowind)
+actual_nowind_cost = getPathConsumptionInMovement(path_nowind, movement_wind)
 
 def getAverageConsumption():
     fly_wind = 0
@@ -258,22 +258,22 @@ def plotBoth():
 """Check for not the same amount of solutions"""
 
 """GET consumtion differences"""
-fly_wind, fly_nowind, fly_nowind_againstwind, hover_wind, hover_nowind, \
-    total_wind, total_nowind, WPT_wind, WPT_nowind = getAverageConsumption()
-print(f'Fly consumption: ')
-print(f'Wind: {fly_wind:.2f}, Nowind: {fly_nowind:.2f}')
-print(f'Nowind real: {fly_nowind_againstwind:.2f}')
+# fly_wind, fly_nowind, fly_nowind_againstwind, hover_wind, hover_nowind, \
+#     total_wind, total_nowind, WPT_wind, WPT_nowind = getAverageConsumption()
+# print(f'Fly consumption: ')
+# print(f'Wind: {fly_wind:.2f}, Nowind: {fly_nowind:.2f}')
+# print(f'Nowind real: {fly_nowind_againstwind:.2f}')
 
-print(f'\nHover consumption:')
-print(f'Wind: {hover_wind:.2f}, Nowind: {hover_nowind:.2f}')
+# print(f'\nHover consumption:')
+# print(f'Wind: {hover_wind:.2f}, Nowind: {hover_nowind:.2f}')
 
-print(f'\nTotal consumption:')
-print(f'Wind: {total_wind:.2f}, Nowind: {total_nowind:.2f}')
+# print(f'\nTotal consumption:')
+# print(f'Wind: {total_wind:.2f}, Nowind: {total_nowind:.2f}')
 
-print(f'\nWPT consumption:')
-print(f'Wind: {(WPT_wind / 1000):.2f}, Nowind: {(WPT_nowind / 1000):.2f}')
+# print(f'\nWPT consumption:')
+# print(f'Wind: {(WPT_wind / 1000):.2f}, Nowind: {(WPT_nowind / 1000):.2f}')
 
-print(f'first total wind, second nowind: {compareValuesProc(total_wind, total_nowind)}')
+# print(f'first total wind, second nowind: {compareValuesProc(total_wind, total_nowind)}')
 
 
 """GET different paths"""
@@ -294,15 +294,15 @@ print(f'first total wind, second nowind: {compareValuesProc(total_wind, total_no
 
 
 """GET specific path comparison"""
-# print(f'\n\nWIND Battery Consumption {UAV_consumption_wind[0]} mAh')
-# print(f'Hovering: {UAV_consumption_wind[1]} mAh')
-# print(f'Flying: {UAV_consumption_wind[2]} mAh')
-# print(f'Wind solution path sequence: {path_wind} \n')
+print(f'\n\nWIND Battery Consumption {UAV_consumption_wind[0]} mAh')
+print(f'Hovering: {UAV_consumption_wind[1]} mAh')
+print(f'Flying: {UAV_consumption_wind[2]} mAh')
+print(f'Wind solution path sequence: {path_wind} \n')
 
-# print(f'NO WIND Battery Consumption {UAV_consumption_nowind[0]} mAh')
-# print(f'Hovering: {UAV_consumption_nowind[1]} mAh')
-# print(f'Flying: {UAV_consumption_nowind[2]} mAh')
-# print(f'No wind flight consumption in wind cost: {actual_nowind_cost:.2f} mAh')
-# print(f'No wind solution path sequence: {path_nowind}')
-# plotBoth()
+print(f'NO WIND Battery Consumption {UAV_consumption_nowind[0]} mAh')
+print(f'Hovering: {UAV_consumption_nowind[1]} mAh')
+print(f'Flying: {UAV_consumption_nowind[2]} mAh')
+print(f'No wind flight consumption in wind cost: {actual_nowind_cost:.2f} mAh')
+print(f'No wind solution path sequence: {path_nowind}')
+plotBoth()
 """END Visualisation Functions"""
