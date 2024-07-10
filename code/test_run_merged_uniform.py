@@ -14,9 +14,9 @@ Make sure:
 Change working directory to a place where to save test results
 """
 
-terrain_name_list = ['LiYu1km.xyz']
+terrain_name_list = ['TongMen1km.xyz', 'LiYu1km.xyz', 'YanZiKou1km.xyz', 'FuXing1km.xyz', 'ZiYouLi1km.xyz', 'DongHwa1km.xyz']
 # Value meaning: 1st - angle of original wind input; 2nd - wind speed; 3rd - resolution of terrain input
-wind_name_extention_list = ['150_10_30m']
+wind_name_extention_list = ['60_3_30m', '150_3_30m', '250_3_30m', '60_7_30m', '150_7_30m', '250_7_30m']
 
 
 # Iterate through multiple terraind and winds
@@ -261,6 +261,20 @@ for terrain_name in terrain_name_list:
                     K_ceiling_counter += 1
                     if K_ceiling_counter == K_ceiling_limit: continue_loop = False   
             return  dictionary, K_ceiling_counter, continue_loop
+        
+        def processDuplicates(data):
+            seen = {}
+            found_Duplicate = False
+
+            for index, entry in enumerate(data):
+                entry_tuple = tuple(entry)
+                if entry_tuple in seen:
+                    write_print('Cluster ERROR: Duplicate cluster found, restarting X-Means')
+                    found_Duplicate = True
+                    break
+                else:
+                    seen[entry_tuple] = index
+            return found_Duplicate
 
         K_ceiling_limit = 5
         provide_charge = iot.batteryConsumtionGivenTime(0, drone.minimum_operation_time)
@@ -275,6 +289,7 @@ for terrain_name in terrain_name_list:
                 # Init first sensors after density change
                 K_value = 1
                 K_ceiling_counter = 0
+                counter_reset_XMeans = 0
                 sensors_num += sensors_num_increment
                 sensors = generateSensorsUniform(terrain, sensors_num)
 
@@ -286,11 +301,19 @@ for terrain_name in terrain_name_list:
 
                 # Finding best K_value
                 while K_value <= sensors_num:
+                    temp_K_value = K_value
                     try: clusters, wpt_area, cluster_charge_time, K_value = clusterXMeansChargeTime(terrain, sensors, angle_WPT, min_hover_WPT, provide_charge, K_value)
                     except:
                         write_print('ITEREND: X-Means exception reached')
                         endIteration(K_value, sensors_num, best_wind, best_nowind, best_nowind_inwind)
                         break
+                    reset_XMeans = processDuplicates(clusters)
+                    if reset_XMeans:
+                        K_value = temp_K_value
+                        counter_reset_XMeans += 1
+                        if counter_reset_XMeans == 3: K_value += 1
+                        continue
+                    else: counter_reset_XMeans = 0
 
                     # run testruns for wind and nowind solutions
                     if continue_loop_wind: best_wind, K_ceiling_counter, continue_loop_wind = runTest(K_ceiling_counter, best_wind, type="wind")
