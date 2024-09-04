@@ -1,11 +1,12 @@
 from measurement import IoTDevice, UAV, WPT
 from cluster_path import *
 from sensors_generation import generateSensorsUniform
-from algorithms import AntColony
+from algorithms import AntColony, GeneticAlgorithm, BlackHoleAlgorithm
 from read_write_data import *
 import csv
 import os
 import shutil
+import copy
 
 """
 Make sure:
@@ -13,10 +14,9 @@ Make sure:
     2) Wind angle and velocity files are in: code/windninja/wind
 Change working directory to a place where to save test results
 """
-
-terrain_name_list = ['TongMen1km.xyz', 'LiYu1km.xyz', 'YanZiKou1km.xyz', 'FuXing1km.xyz', 'ZiYouLi1km.xyz', 'DongHwa1km.xyz']
-# Value meaning: 1st - angle of original wind input; 2nd - wind speed; 3rd - resolution of terrain input
-wind_name_extention_list = ['60_3_30m', '150_3_30m', '250_3_30m', '60_7_30m', '150_7_30m', '250_7_30m']
+#'TongMen1km.xyz', 'LiYu1km.xyz', 'YanZiKou1km.xyz', 'FuXing1km.xyz', 'ZiYouLi1km.xyz', 'DongHwa1km.xyz'
+terrain_name_list = ['TongMen1km.xyz', 'LiYu1km.xyz']
+wind_name_extention_list = ['150_7_30m', '250_7_30m']
 
 
 # Iterate through multiple terraind and winds
@@ -28,12 +28,21 @@ for terrain_name in terrain_name_list:
         wind_parameters_angle = wind_name_extention.split('_')[0]
         wind_parameters_speed = wind_name_extention.split('_')[1]
 
-        working_directory_path = '/home/vytska/thesis/code/csv/'
+        working_directory_path = '/home/vytska/thesis/code/csv/2weeks-uniform/'
         working_directory_path += terrain_name.split('.')[0] + '_combined_uniform' + \
             f'_{wind_parameters_angle}deg{wind_parameters_speed}kts' '/'
-        working_directory_path_wind = working_directory_path + 'wind'+ '/'
-        working_directory_path_nowind = working_directory_path + 'nowind'+ '/'
-        working_directory_path_nowind_inwind = working_directory_path + 'nowind-inwind'+ '/'
+        
+        aco_working_directory_path_wind = working_directory_path + 'ACO_wind'+ '/'
+        aco_working_directory_path_nowind = working_directory_path + 'ACO_nowind'+ '/'
+        aco_working_directory_path_nowind_inwind = working_directory_path + 'ACO_nowind-inwind'+ '/'
+
+        ga_working_directory_path_wind = working_directory_path + 'GA_wind'+ '/'
+        ga_working_directory_path_nowind = working_directory_path + 'GA_nowind'+ '/'
+        ga_working_directory_path_nowind_inwind = working_directory_path + 'GA_nowind-inwind'+ '/'
+
+        bh_working_directory_path_wind = working_directory_path + 'BH_wind'+ '/'
+        bh_working_directory_path_nowind = working_directory_path + 'BH_nowind'+ '/'
+        bh_working_directory_path_nowind_inwind = working_directory_path + 'BH_nowind-inwind'+ '/'
 
         # Remove the directory if it exists to reset results for retests
         def createWorkingDirectory(dir_path):
@@ -43,9 +52,18 @@ for terrain_name in terrain_name_list:
             os.makedirs(dir_path, exist_ok=True)
 
         createWorkingDirectory(working_directory_path)
-        createWorkingDirectory(working_directory_path_wind)
-        createWorkingDirectory(working_directory_path_nowind)
-        createWorkingDirectory(working_directory_path_nowind_inwind)
+        
+        createWorkingDirectory(aco_working_directory_path_wind)
+        createWorkingDirectory(aco_working_directory_path_nowind)
+        createWorkingDirectory(aco_working_directory_path_nowind_inwind)
+
+        createWorkingDirectory(ga_working_directory_path_wind)
+        createWorkingDirectory(ga_working_directory_path_nowind)
+        createWorkingDirectory(ga_working_directory_path_nowind_inwind)
+
+        createWorkingDirectory(bh_working_directory_path_wind)
+        createWorkingDirectory(bh_working_directory_path_nowind)
+        createWorkingDirectory(bh_working_directory_path_nowind_inwind)
         
         """BEGIN Motion and WPT Parameter Defintion"""
         # For X-Means
@@ -58,11 +76,15 @@ for terrain_name in terrain_name_list:
         UAV_steps = 20 #steps between points
         """END Parameter Defintion"""
 
-        """BEGIN Sensor Parameter Definition"""
-        sensors_num = 0
+        """BEGIN Iteration Parameter Definition"""
+        # For solution limiter
+        limit_type = 'nolimit'
+
+        # For sensor amount, limiter, increment
+        sensors_num = 2
         sensors_num_limit = 50
-        sensors_num_increment = 2
-        """END Sensor Parameter Definition"""
+        sensors_num_increment = 1
+        """END Iteration Parameter Definition"""
 
         """BEGIN Terrain, Wind and Devices Definition"""
         terrain = readTerrainXYZ(terrain_name)
@@ -95,16 +117,8 @@ for terrain_name in terrain_name_list:
             print(text)
 
         def dictionaryValueReset(best_variables):
-            return {
-                "k": best_variables["k"],
-                "time": best_variables["time"],
-                "consumption": best_variables["consumption"].copy(),
-                "path": best_variables["path"].copy(),
-                "clusters": best_variables["clusters"].copy(),
-                "motion": best_variables["motion"].copy(),
-                "movement": best_variables["movement"].copy(),
-            }
-
+            return copy.deepcopy(best_variables)
+        
         # Best performing variable dictionary
         best_variables = {
             "k": 0,
@@ -116,19 +130,15 @@ for terrain_name in terrain_name_list:
             "movement": [],
             "wpt-consumption": float('inf')
         }
-        best_wind = best_variables.copy()
-        best_nowind = best_variables.copy()
-        best_nowind_inwind = best_variables.copy()
-
 
         # Helper Function: Saves results in specific test run directory
         # Usage: In end iteration function
         def saveResults(dictionary, dir_path):
             # K_value max reached, output best solution, if it was found
             if dictionary["time"] !=  float('inf') and dictionary["consumption"][0] !=  float('inf'):
-                write_print(f'BEST TOTAL SOLUTION WAS FOUND')
-                write_print(f'consumption: {dictionary["consumption"][0]:.2f} mAh')
-                write_print(f'K{dictionary["k"]} time: {(dictionary["time"]/60):.2f} min')
+                write_print(f'TEST!BEST TOTAL SOLUTION WAS FOUND')
+                write_print(f'TEST!CONSUMPTION: {dictionary["consumption"][0]:.2f} mAh')
+                write_print(f'TEST!K{dictionary["k"]} time: {(dictionary["time"]/60):.2f} min')
                 
                 # Save sensors, clusters results for best solutions at the specified density and starting_points
                 solution_working_directory_path = dir_path + f'SN{sensors_num}/'
@@ -161,60 +171,93 @@ for terrain_name in terrain_name_list:
                     for line in dictionary["movement"]:
                             writer.writerow(line)
             else:
-                write_print(f'NO TOTAL SOLUTION WAS FOUND')
+                write_print(f'TEST!NO TOTAL SOLUTION WAS FOUND')
 
         # Usage: end iteration after all K values have been checked
-        def endIteration(K_value, sensors_num, best_wind, best_nowind, best_nowind_inwind):
+        def endIteration(K_value, sensors_num, best_wind, best_nowind, best_nowind_inwind, type=''):
             # Print header information
-            print(f'Terrain: {terrain_name}; Wind{wind_name_extention}')
-            write_print(f'SN{sensors_num}: At {K_value}K limit reached')
+            print(f'{type}TEST!TERRAIN: {terrain_name}; Wind{wind_name_extention}')
+            write_print(f'{type}TEST!SN{sensors_num}: At {K_value}K limit reached')
 
-            # Save wind and nowind results
-            write_print(f'WIND results')
-            saveResults(dictionary=best_wind, dir_path=working_directory_path_wind)
-            write_print(f'NOWIND results')
-            saveResults(dictionary=best_nowind, dir_path=working_directory_path_nowind)
-            write_print(f'NOWIND-INWIND results')
-            saveResults(dictionary=best_nowind_inwind, dir_path=working_directory_path_nowind_inwind)
+            # Save results
+            if type == 'ACO':
+                write_print(f'{type}TEST!WIND results')
+                saveResults(dictionary=best_wind, dir_path=aco_working_directory_path_wind)
+                write_print(f'{type}TEST!NOWIND results')
+                saveResults(dictionary=best_nowind, dir_path=aco_working_directory_path_nowind)
+                write_print(f'{type}TEST!NOWIND-INWIND results')
+                saveResults(dictionary=best_nowind_inwind, dir_path=aco_working_directory_path_nowind_inwind)
+            elif type == 'GA':
+                write_print(f'{type}TEST!WIND results')
+                saveResults(dictionary=best_wind, dir_path=ga_working_directory_path_wind)
+                write_print(f'{type}TEST!NOWIND results')
+                saveResults(dictionary=best_nowind, dir_path=ga_working_directory_path_nowind)
+                write_print(f'{type}TEST!NOWIND-INWIND results')
+                saveResults(dictionary=best_nowind_inwind, dir_path=ga_working_directory_path_nowind_inwind)
+            elif type == 'BH':
+                write_print(f'{type}TEST!WIND results')
+                saveResults(dictionary=best_wind, dir_path=bh_working_directory_path_wind)
+                write_print(f'{type}TEST!NOWIND results')
+                saveResults(dictionary=best_nowind, dir_path=bh_working_directory_path_nowind)
+                write_print(f'{type}TEST!NOWIND-INWIND results')
+                saveResults(dictionary=best_nowind_inwind, dir_path=bh_working_directory_path_nowind_inwind)
+
             write_print(f'\n')
 
         # Runs through the whole solution finding process
         # Usage: after sensors and clusters found for each iteration
-        def runTest(K_ceiling_counter, dictionary, type):
+        def runTest(K_ceiling_counter, dictionary, limit_type='UAV', test_type='NA', path_algorithm='ACO'):
             # Find all possilbe paths the UAV can take and get power consumption needed at eaceh hovering point
-            if type == 'wind':
-                print(f'WIND SN{sensors_num} K{K_value}')
+            print(f'{path_algorithm}TEST!{test_type} SN{sensors_num} K{K_value}')
+            if test_type == 'wind':
                 getMotionCost = 'consumption'
                 hoverCostType = 'wind'
-            elif type == 'nowind':
-                print(f'NOWIND SN{sensors_num} K{K_value}')
+            elif test_type == 'nowind':
                 getMotionCost = 'distance'
                 hoverCostType = 'nowind'
-            elif type == 'nowind-inwind':
-                print(f'NOWIND-INWIND SN{sensors_num} K{K_value}')
+            elif test_type == 'nowind-inwind':
                 getMotionCost = 'distance'
                 hoverCostType = 'wind'
 
-            movement_matrix, time_matrix, motion_matrix = getMotion(clusters, terrain, UAV_steps, UAV_elevation, getMotionCost, wind)
-            hover_matrix = hoverPowerConsumptionAtCentroid(clusters, terrain, cluster_charge_time, wind, type = hoverCostType)
-            real_movement_matrix = []
-            if type == 'nowind-inwind':
-                real_movement_matrix, time_matrix, not_needed_motion_matrix = getMotion(clusters, terrain, UAV_steps, UAV_elevation, 'consumption', wind)
+            # Handle limit_type parameter
+            if limit_type not in ['UAV', 'nolimit']:
+                raise ValueError("limit_type must be either 'UAV' or 'nolimit'")
 
-            # Find path solution for UAV
-            ant_colony = AntColony(movement_matrix, num_ants=80, num_iterations=50, evaporation_rate=0.5, alpha=1, beta=1)
-            aco_path, aco_cost = ant_colony.find_shortest_path()
-            path_solution = aco_path
-            if type == "nowind": aco_cost, movement_matrix = drone.convertDistancetoMeasurements(aco_cost, movement_matrix, type='milliamphours')
-            if type == "nowind-inwind":
+            if test_type != 'nowind-inwind': 
+                movement_matrix, time_matrix, motion_matrix = getMotion(clusters, terrain, UAV_steps, UAV_elevation, getMotionCost, wind)
+                hover_matrix = hoverPowerConsumptionAtCentroid(clusters, terrain, cluster_charge_time, wind, type = hoverCostType)
+                if path_algorithm == 'ACO':
+                    ant_colony = AntColony(movement_matrix, num_ants=80, num_iterations=50, evaporation_rate=0.5, alpha=1, beta=1)
+                    path_solution, flight_consumption = ant_colony.find_shortest_path()
+                if path_algorithm == 'GA':
+                    genetic_algorithm = GeneticAlgorithm(movement_matrix, population_size=200, mutation_rate=0.01, num_generations=1000)
+                    path_solution, flight_consumption = genetic_algorithm.find_shortest_path()
+                if path_algorithm == 'BH':
+                    blackhole_algorithm = BlackHoleAlgorithm(movement_matrix, num_stars=100, num_iterations=3000)
+                    path_solution, flight_consumption = blackhole_algorithm.find_shortest_path()
+                if test_type == 'nowind': flight_consumption, movement_matrix = drone.convertDistancetoMeasurements(flight_consumption, movement_matrix, type='milliamphours')
+            
+            elif test_type == 'nowind-inwind':
+                nowind_movement_matrix, time_matrix, motion_matrix = getMotion(clusters, terrain, UAV_steps, UAV_elevation, getMotionCost, wind)
+                wind_movement_matrix, time_matrix, __ = getMotion(clusters, terrain, UAV_steps, UAV_elevation, 'consumption', wind)
+                hover_matrix = hoverPowerConsumptionAtCentroid(clusters, terrain, cluster_charge_time, wind, type = hoverCostType)
+                if path_algorithm == 'ACO':
+                    ant_colony = AntColony(nowind_movement_matrix, num_ants=80, num_iterations=50, evaporation_rate=0.5, alpha=1, beta=1)
+                    path_solution, ___ = ant_colony.find_shortest_path()
+                if path_algorithm == 'GA':
+                    genetic_algorithm = GeneticAlgorithm(nowind_movement_matrix, population_size=200, mutation_rate=0.01, num_generations=1000)
+                    path_solution, ___ = genetic_algorithm.find_shortest_path()
+                if path_algorithm == 'BH':
+                    blackhole_algorithm = BlackHoleAlgorithm(nowind_movement_matrix, num_stars=100, num_iterations=3000)
+                    path_solution, flight_consumption = blackhole_algorithm.find_shortest_path()
                 total_path_cost = 0
                 for index, destination in enumerate(path_solution):
                     if index > 0: 
-                        actual_path_cost = real_movement_matrix[last_destination][destination]
+                        actual_path_cost = wind_movement_matrix[last_destination][destination]
                         total_path_cost += actual_path_cost
                     last_destination = destination
-                aco_cost = total_path_cost
-            flight_consumption = aco_cost
+                flight_consumption = total_path_cost
+                movement_matrix = wind_movement_matrix
 
             # Find WPT and hovering charge consumption
             total_cluster_charge_time = uav_hover_time = sum(cluster_charge_time)
@@ -233,33 +276,39 @@ for terrain_name in terrain_name_list:
             total_uav_operation_time = uav_hover_time + uav_flight_time
             
             # Output current computations
-            print(f'UAV: Path {aco_path}')
-            print(f'UAV: 1) Charge {hover_charge_consumption:.2f} mAh 2) Time {(total_uav_operation_time/60):.2f} min')
+            print(f'TEST!UAV: Path {path_solution}')
+            print(f'TEST!UAV: 1) Charge {hover_charge_consumption:.2f} mAh 2) Time {(total_uav_operation_time/60):.2f} min')
 
             continue_loop = True
+            is_solution = True
             # Check if the current solution fits UAV operation time and charge amount requirements
-            if total_uav_operation_time > drone.minimum_operation_time:
-                print('Not Solution: IOT Devices charged less than UAV operation time \n')
-            elif total_uav_charge_consumption > drone.battery_capacity:
-                print('Not Solution: UAV battery exceeded \n')
-            else: 
-                print('Solution \n')
-                # If current solution time and charging is smaller, then record this as best solution
-                if (total_uav_operation_time < dictionary["time"]) and (total_uav_charge_consumption < dictionary["consumption"][0]):
-                    dictionary.update({
-                        "k": K_value,
-                        "time": total_uav_operation_time,
-                        "consumption": [total_uav_charge_consumption, hover_charge_consumption, flight_consumption],
-                        "path": path_solution,
-                        "clusters": clusters,
-                        "motion": motion_matrix,
-                        "movement": movement_matrix,
-                        "wpt-consumption": wpt_charge_consumption
-                    })
-                    K_ceiling_counter = 0
-                else: 
-                    K_ceiling_counter += 1
-                    if K_ceiling_counter == K_ceiling_limit: continue_loop = False   
+            if limit_type == 'UAV':
+                if total_uav_operation_time > drone.minimum_operation_time:
+                    print('TEST!NOTSOLUTION: IOT Devices charged less than UAV operation time \n')
+                    is_solution == False
+                elif total_uav_charge_consumption > drone.battery_capacity:
+                    print('TEST!NOTSOLUTION: UAV battery exceeded \n')
+                    is_solution == False
+            # If current solution time and charging is smaller, then record this as best solution
+            if is_solution and (total_uav_operation_time < dictionary["time"]) and (total_uav_charge_consumption < dictionary["consumption"][0]):
+                print('TEST!SOLUTION \n')
+                new_dictionary = copy.deepcopy(dictionary)
+                new_dictionary.update({
+                    "k": K_value,
+                    "time": total_uav_operation_time,
+                    "consumption": [total_uav_charge_consumption, hover_charge_consumption, flight_consumption],
+                    "path": path_solution,
+                    "clusters": clusters,
+                    "motion": motion_matrix,
+                    "movement": movement_matrix,
+                    "wpt-consumption": wpt_charge_consumption
+                })
+                dictionary = copy.deepcopy(new_dictionary)
+                K_ceiling_counter = 0
+            else:
+                print('TEST!NOTSOLUTION: Previous results are better \n')
+                K_ceiling_counter += 1
+                if K_ceiling_counter == K_ceiling_limit: continue_loop = False   
             return  dictionary, K_ceiling_counter, continue_loop
         
         def processDuplicates(data):
@@ -269,7 +318,7 @@ for terrain_name in terrain_name_list:
             for index, entry in enumerate(data):
                 entry_tuple = tuple(entry)
                 if entry_tuple in seen:
-                    write_print('Cluster ERROR: Duplicate cluster found, restarting X-Means')
+                    write_print(f'TEST!XMeans_ERROR: Duplicate cluster found with K{K_value}, trying again')
                     found_Duplicate = True
                     break
                 else:
@@ -277,6 +326,7 @@ for terrain_name in terrain_name_list:
             return found_Duplicate
 
         K_ceiling_limit = 5
+        K_value_init = 2
         provide_charge = iot.batteryConsumtionGivenTime(0, drone.minimum_operation_time)
         # Write and Print all of the log text to have backup for later and to keep track on live iteration progression
         with open(working_directory_path + 'test_results.txt', mode='w') as file:
@@ -285,48 +335,173 @@ for terrain_name in terrain_name_list:
 
             # Increase density and starting points
             # To get best K_value at different distribution levels
-            while sensors_num < sensors_num_limit:
+            while sensors_num <= sensors_num_limit:
                 # Init first sensors after density change
-                K_value = 1
+                K_value = K_value_init
                 K_ceiling_counter = 0
+                limit_value = float('inf')
                 counter_reset_XMeans = 0
-                sensors_num += sensors_num_increment
+                XMeans_exception = False
+                XMeans_iterend = False
                 sensors = generateSensorsUniform(terrain, sensors_num)
 
                 # Rest dictionary values
-                best_wind = dictionaryValueReset(best_variables)
-                best_nowind = dictionaryValueReset(best_variables)
-                best_nowind_inwind = dictionaryValueReset(best_variables)
-                continue_loop_wind, continue_loop_nowind, continue_loop_nowind_inwind = True, True, True
+                aco_best_wind = dictionaryValueReset(best_variables)
+                aco_best_nowind = dictionaryValueReset(best_variables)
+                aco_best_nowind_inwind = dictionaryValueReset(best_variables)
+                aco_continue_loop_wind, aco_continue_loop_nowind, aco_continue_loop_nowind_inwind = True, True, True
+
+                ga_best_wind = dictionaryValueReset(best_variables)
+                ga_best_nowind = dictionaryValueReset(best_variables)
+                ga_best_nowind_inwind = dictionaryValueReset(best_variables)
+                ga_continue_loop_wind, ga_continue_loop_nowind, ga_continue_loop_nowind_inwind = True, True, True
+
+                bh_best_wind = dictionaryValueReset(best_variables)
+                bh_best_nowind = dictionaryValueReset(best_variables)
+                bh_best_nowind_inwind = dictionaryValueReset(best_variables)
+                bh_continue_loop_wind, bh_continue_loop_nowind, bh_continue_loop_nowind_inwind = True, True, True
 
                 # Finding best K_value
                 while K_value <= sensors_num:
                     temp_K_value = K_value
-                    try: clusters, wpt_area, cluster_charge_time, K_value = clusterXMeansChargeTime(terrain, sensors, angle_WPT, min_hover_WPT, provide_charge, K_value)
-                    except:
-                        write_print('ITEREND: X-Means exception reached')
-                        endIteration(K_value, sensors_num, best_wind, best_nowind, best_nowind_inwind)
-                        break
+                    XMeans_exception = False
+                    try: XMeans_result = clusterXMeansChargeTime(terrain, sensors, angle_WPT, min_hover_WPT, provide_charge, limit_value, limit_type, K_value)
+                    except: 
+                        write_print(f'TEST!XMeans_ERROR: At K{temp_K_value} EXCEPTION')
+                        XMeans_exception = True
+
+                    if isinstance(XMeans_result, tuple): clusters, wpt_area, cluster_charge_time, limit_value, K_value = XMeans_result
+                    else:
+                        if XMeans_result == 'K_Ceiling' or XMeans_result == 'K_Value': 
+                            if XMeans_result == 'K_Ceiling': write_print(f'TEST!ITEREND: At K{temp_K_value} X-Means: reached K_Ceiling')
+                            elif XMeans_result == 'K_Value': write_print(f'TEST!ITEREND: At K{temp_K_value} X-Means: K_Value reached sensors_num')
+                            endIteration(K_value - 1, sensors_num, aco_best_wind, aco_best_nowind, aco_best_nowind_inwind, 'ACO')
+                            endIteration(K_value - 1, sensors_num, ga_best_wind, ga_best_nowind, ga_best_nowind_inwind, 'GA')
+                            endIteration(K_value - 1, sensors_num, bh_best_wind, bh_best_nowind, bh_best_nowind_inwind, 'BH')
+                            XMeans_iterend = True
+                            break
+                        elif XMeans_result == 'K_Floor': 
+                            write_print(f'TEST!XMeans_ERROR: At K{temp_K_value} reached K_Floor')
+                            write_print(f'TEST!RESETITER: reseting K_value and regenerating sensors')
+
+                            sensors = generateSensorsUniform(terrain, sensors_num)
+                            K_value = K_value_init
+                            limit_value = float('inf')
+                            # Rest dictionary values
+                            aco_best_wind = dictionaryValueReset(best_variables)
+                            aco_best_nowind = dictionaryValueReset(best_variables)
+                            aco_best_nowind_inwind = dictionaryValueReset(best_variables)
+                            aco_continue_loop_wind, aco_continue_loop_nowind, aco_continue_loop_nowind_inwind = True, True, True
+
+                            ga_best_wind = dictionaryValueReset(best_variables)
+                            ga_best_nowind = dictionaryValueReset(best_variables)
+                            ga_best_nowind_inwind = dictionaryValueReset(best_variables)
+                            ga_continue_loop_wind, ga_continue_loop_nowind, ga_continue_loop_nowind_inwind = True, True, True
+
+                            bh_best_wind = dictionaryValueReset(best_variables)
+                            bh_best_nowind = dictionaryValueReset(best_variables)
+                            bh_best_nowind_inwind = dictionaryValueReset(best_variables)
+                            bh_continue_loop_wind, bh_continue_loop_nowind, bh_continue_loop_nowind_inwind = True, True, True
+                    
+                    match_err_XMeans = False
+                    # Check if cluster number matches K_value
+                    if (len(clusters) - 1) != K_value:
+                        reset_XMeans = True
+                        match_err_XMeans = True
+                        write_print(f'TEST!XMeans_ERROR: At K{temp_K_value} clusters number does not match K')
+
                     reset_XMeans = processDuplicates(clusters)
                     if reset_XMeans:
                         K_value = temp_K_value
                         counter_reset_XMeans += 1
-                        if counter_reset_XMeans == 3: K_value += 1
+                        if counter_reset_XMeans == 3:
+                            #If match error flag raised, then dont print this message
+                            if not match_err_XMeans: write_print(f'TEST!XMeans_ERROR: At K{temp_K_value} reached duplicate limit')
+                            write_print(f'TEST!RESETITER: reseting K_value and regenerating sensors')
+
+                            sensors = generateSensorsUniform(terrain, sensors_num)
+                            K_value = K_value_init
+                            limit_value = float('inf')
+                            counter_reset_XMeans = 0
+                            # Rest dictionary values
+                            aco_best_wind = dictionaryValueReset(best_variables)
+                            aco_best_nowind = dictionaryValueReset(best_variables)
+                            aco_best_nowind_inwind = dictionaryValueReset(best_variables)
+                            aco_continue_loop_wind, aco_continue_loop_nowind, aco_continue_loop_nowind_inwind = True, True, True
+
+                            ga_best_wind = dictionaryValueReset(best_variables)
+                            ga_best_nowind = dictionaryValueReset(best_variables)
+                            ga_best_nowind_inwind = dictionaryValueReset(best_variables)
+                            ga_continue_loop_wind, ga_continue_loop_nowind, ga_continue_loop_nowind_inwind = True, True, True
+
+                            bh_best_wind = dictionaryValueReset(best_variables)
+                            bh_best_nowind = dictionaryValueReset(best_variables)
+                            bh_best_nowind_inwind = dictionaryValueReset(best_variables)
+                            bh_continue_loop_wind, bh_continue_loop_nowind, bh_continue_loop_nowind_inwind = True, True, True
                         continue
-                    else: counter_reset_XMeans = 0
+                    else: 
+                        counter_reset_XMeans = 0
+                        if XMeans_exception:
+                            write_print(f'TEST!XMeans_ERROR: At K{temp_K_value} EXCEPTION AND NOT DUPLICATE')
+                            write_print(f'TEST!RESETITER: reseting K_value and regenerating sensors')
+
+                            sensors = generateSensorsUniform(terrain, sensors_num)
+                            K_value = K_value_init
+                            limit_value = float('inf')
+                            # Rest dictionary values
+                            aco_best_wind = dictionaryValueReset(best_variables)
+                            aco_best_nowind = dictionaryValueReset(best_variables)
+                            aco_best_nowind_inwind = dictionaryValueReset(best_variables)
+                            aco_continue_loop_wind, aco_continue_loop_nowind, aco_continue_loop_nowind_inwind = True, True, True
+
+                            ga_best_wind = dictionaryValueReset(best_variables)
+                            ga_best_nowind = dictionaryValueReset(best_variables)
+                            ga_best_nowind_inwind = dictionaryValueReset(best_variables)
+                            ga_continue_loop_wind, ga_continue_loop_nowind, ga_continue_loop_nowind_inwind = True, True, True
+
+                            bh_best_wind = dictionaryValueReset(best_variables)
+                            bh_best_nowind = dictionaryValueReset(best_variables)
+                            bh_best_nowind_inwind = dictionaryValueReset(best_variables)
+                            bh_continue_loop_wind, bh_continue_loop_nowind, bh_continue_loop_nowind_inwind = True, True, True
+                            continue
 
                     # run testruns for wind and nowind solutions
-                    if continue_loop_wind: best_wind, K_ceiling_counter, continue_loop_wind = runTest(K_ceiling_counter, best_wind, type="wind")
-                    elif not continue_loop_wind: print(f'WIND SN{sensors_num} K{K_value} \n K Ceiling Reached')
-                    if continue_loop_nowind: best_nowind, K_ceiling_counter, continue_loop_nowind = runTest(K_ceiling_counter, best_nowind, type="nowind")
-                    elif not continue_loop_nowind: print(f'NOWIND SN{sensors_num} K{K_value} \n K Ceiling Reached')
-                    if continue_loop_nowind_inwind: best_nowind, K_ceiling_counter, continue_loop_nowind_inwind = runTest(K_ceiling_counter, best_nowind_inwind, type="nowind-inwind")
-                    elif not continue_loop_nowind: print(f'NOWIND-INWIND SN{sensors_num} K{K_value} \n K Ceiling Reached')
+                    if aco_continue_loop_wind: aco_best_wind, K_ceiling_counter, aco_continue_loop_wind = \
+                        runTest(K_ceiling_counter, aco_best_wind, limit_type, "wind", "ACO")
+                    elif not aco_continue_loop_wind: print(f'ACOTEST!WIND SN{sensors_num} K{K_value} \n K_Ceiling Reached')
+                    if aco_continue_loop_nowind: aco_best_nowind, K_ceiling_counter, aco_continue_loop_nowind = \
+                        runTest(K_ceiling_counter, aco_best_nowind, limit_type, "nowind", "ACO")
+                    elif not aco_continue_loop_nowind: print(f'ACOTEST!NOWIND SN{sensors_num} K{K_value} \n K_Ceiling Reached')
+                    if aco_continue_loop_nowind_inwind: aco_best_nowind_inwind, K_ceiling_counter, aco_continue_loop_nowind_inwind = \
+                        runTest(K_ceiling_counter, aco_best_nowind_inwind, limit_type, "nowind-inwind", "ACO")
+                    elif not aco_continue_loop_nowind_inwind: print(f'ACOTEST!NOWIND-INWIND SN{sensors_num} K{K_value} \n K_Ceiling Reached')
 
-                    if not continue_loop_wind and not continue_loop_nowind and not continue_loop_nowind_inwind:
-                        write_print('ITEREND: K ceiling reached by all solutions')
-                        endIteration(K_value, sensors_num, best_wind, best_nowind, best_nowind_inwind)
-                        break
+                    if ga_continue_loop_wind: ga_best_wind, K_ceiling_counter, ga_continue_loop_wind = \
+                        runTest(K_ceiling_counter, ga_best_wind, limit_type, "wind", "GA")
+                    elif not ga_continue_loop_wind: print(f'ACOTEST!WIND SN{sensors_num} K{K_value} \n K_Ceiling Reached')
+                    if ga_continue_loop_nowind: ga_best_nowind, K_ceiling_counter, ga_continue_loop_nowind = \
+                        runTest(K_ceiling_counter, ga_best_nowind, limit_type, "nowind", "GA")
+                    elif not ga_continue_loop_nowind: print(f'ACOTEST!NOWIND SN{sensors_num} K{K_value} \n K_Ceiling Reached')
+                    if ga_continue_loop_nowind_inwind: ga_best_nowind_inwind, K_ceiling_counter, ga_continue_loop_nowind_inwind = \
+                        runTest(K_ceiling_counter, ga_best_nowind_inwind, limit_type, "nowind-inwind", "GA")
+                    elif not ga_continue_loop_nowind_inwind: print(f'ACOTEST!NOWIND-INWIND SN{sensors_num} K{K_value} \n K_Ceiling Reached')
+
+                    if bh_continue_loop_wind: bh_best_wind, K_ceiling_counter, bh_continue_loop_wind = \
+                        runTest(K_ceiling_counter, bh_best_wind, limit_type, "wind", "BH")
+                    elif not bh_continue_loop_wind: print(f'ACOTEST!WIND SN{sensors_num} K{K_value} \n K_Ceiling Reached')
+                    if bh_continue_loop_nowind: bh_best_nowind, K_ceiling_counter, bh_continue_loop_nowind = \
+                        runTest(K_ceiling_counter, bh_best_nowind, limit_type, "nowind", "BH")
+                    elif not bh_continue_loop_nowind: print(f'ACOTEST!NOWIND SN{sensors_num} K{K_value} \n K_Ceiling Reached')
+                    if bh_continue_loop_nowind_inwind: bh_best_nowind_inwind, K_ceiling_counter, bh_continue_loop_nowind_inwind = \
+                        runTest(K_ceiling_counter, bh_best_nowind_inwind, limit_type, "nowind-inwind", "BH")
+                    elif not bh_continue_loop_nowind_inwind: print(f'ACOTEST!NOWIND-INWIND SN{sensors_num} K{K_value} \n K_Ceiling Reached')
+
                     K_value += 1
-                write_print('ITEREND: K_value reached sensors_num')
-                endIteration(K_value, sensors_num, best_wind, best_nowind, best_nowind_inwind)
+
+                if XMeans_iterend == False:
+                    write_print('TEST!ITEREND: K_value reached sensors_num')
+                    endIteration(K_value - 1, sensors_num, aco_best_wind, aco_best_nowind, aco_best_nowind_inwind, 'ACO')
+                    endIteration(K_value - 1, sensors_num, ga_best_wind, ga_best_nowind, ga_best_nowind_inwind, 'GA')
+                    endIteration(K_value - 1, sensors_num, bh_best_wind, bh_best_nowind, bh_best_nowind_inwind, 'BH')
+                
+                sensors_num += sensors_num_increment

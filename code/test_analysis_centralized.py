@@ -2,18 +2,20 @@ from read_write_data import *
 from plot import *
 import matplotlib.pyplot as plt
 
-test_name_list = ['TongMen1km', 'LiYu1km', 'YanZiKou1km', 'FuXing1km', 'ZiYouLi1km', 'DongHwa1km']
-wind_name_extention_list_3kts = ['60deg3kts', '150deg3kts', '250deg3kts']
-wind_name_extention_list_7kts = ['60deg7kts', '150deg7kts', '250deg7kts']
-csv_path = '/home/vytska/thesis/code/csv/'
+test_name_list = ['TongMen1km', 'LiYu1km']
+wind_name_extention_list_3kts = ['150deg3kts', '250deg3kts']
+wind_name_extention_list_7kts = ['150deg7kts', '250deg7kts']
+csv_path = '/home/vytska/thesis/code/csv/multi-alg-finished/'
 
 def main(test_name, wind_name_extention):
     test_directory = test_name + '_combined_centralized_' + wind_name_extention + '/'
     readCSV_path = test_directory
-    working_directory_path = csv_path + test_directory + '/'
-    working_directory_path_wind = working_directory_path + 'wind/'
+    working_directory_path = csv_path + test_directory
+    working_directory_path_wind = working_directory_path + 'ACO_wind/'
     working_directory_path_nowind = working_directory_path + 'nowind/'
     
+    print(working_directory_path_wind)
+
     def readMovementFile(directory_path):
         movement = []
         with open(directory_path + 'movement.csv', 'r') as file:

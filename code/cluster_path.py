@@ -14,7 +14,7 @@ def getCenterPoint(terrain):
     point_index = np.argmin((terrain[:, 0] - x)**2 + (terrain[:, 1] - y)**2)
     return terrain[point_index]
 
-def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provide_charge, K_value = 'NA'):
+def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provide_charge, limit_value , limit_type='UAV', K_value = 'NA'):
     cluster_hover_time = []
     center_point = getCenterPoint(terrain)
     sensor_num = len(sensors)
@@ -22,12 +22,16 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
     smallest_charge_time = float('inf')
     limit_counter = 0
     
-    # If K_value provided, start checking for Check_K_ceiling
-    if K_value > 1: Check_K_ceiling = True
-    # Check if K_value provided, if not then start K from 1 and Check_K_floor
-    elif K_value == 'NA' or K_value == 1: 
-        K_value = 1
+    # Handle K_value parameter
+    if K_value > 2: Check_K_ceiling = True
+    elif K_value == 'NA' or K_value <= 2: 
+        if K_value == 'NA': K_value = 1
         Check_K_floor = True
+
+    # Handle limit_type parameter
+    if limit_type not in ['UAV', 'nolimit']:
+        raise ValueError("limit_type must be either 'UAV' or 'nolimit'")
+    if limit_type == 'UAV': limit_value = drone.minimum_operation_time
 
     # Iterate until can't increase K_value or solution is found
     while K_value <= sensor_num:
@@ -78,34 +82,36 @@ def clusterXMeansChargeTime(terrain, sensors, angle, lowest_hover_height, provid
             wpt_area.append([center, cluster_hover_height, furthest_sensor_center_distance])
 
         # If Charging time is equals to or exceedes UAV operation time, this k is not the solution
-        # print(f'k: {K_value}, total_charge: {total_charge_time / 60} min')
-        if total_charge_time >= drone.minimum_operation_time:
-            print(f'Cluster NOTSOLUTION: charge time {(total_charge_time/60):.2f} min at {K_value}K')
+        if total_charge_time >= limit_value:
+            print(f'XMEANS!NOTSOLUTION: charge time {(total_charge_time/60):.2f} min at {K_value}K')
             if Check_K_ceiling == True: 
                 limit_counter += 1
-                print(f'K Ceiling {limit_counter}')
+                print(f'XMEANS!K_Ceiling {limit_counter}')
                 if limit_counter >= 5:
-                    print('ITERATION END: K Value Ceiling reached')
-                    return 0
+                    print('XMEANS!ITEREND: K Value Ceiling reached')
+                    return 'K_Ceiling'
             elif Check_K_floor == True:
                 # If charge time is constantly increasing, then K_floor has been reached
                 if total_charge_time > smallest_charge_time: limit_counter += 1
                 else: 
                     smallest_charge_time = total_charge_time
                     limit_counter = 0
-                print(f'K Floor {limit_counter}: {(total_charge_time/60):.2f}, {(smallest_charge_time/60):.2f}')
+                print(f'XMEANS!K_Floor {limit_counter}: {(total_charge_time/60):.2f}, {(smallest_charge_time/60):.2f}')
                 if limit_counter >= 20:
-                    print('ITERATION END: K Value Floor reached')
-                    return 0
+                    print('XMEANS!ITEREND: K Value Floor reached')
+                    return 'K_Floor'
             K_value += 1
             continue
         else:
+            limit_value = total_charge_time
             centroids = np.vstack((center_point, kmeans.cluster_centers_))
-            return centroids, wpt_area, cluster_hover_time, K_value
+            if limit_type == 'UAV': return centroids, wpt_area, cluster_hover_time, K_value
+            if limit_type == 'nolimit': return centroids, wpt_area, cluster_hover_time, limit_value, K_value
+
         
     # If solution was not found, no solution exists
-    print('ITERATION END: K Value reached sensor_num value')
-    return 0
+    print('XMEANS - ITERATION END: K_Value reached sensor_num value')
+    return 'K_Value'
 
 #using euclidean distance between 2 points
 #returning matrix of distance between each centroid points
